@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>План освоения модуля tx_data_gen</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        h1 {
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            background-color: #eaf2f8;
+            padding: 8px;
+            border-left: 4px solid #3498db;
+        }
+        .week {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .tech-card {
+            background-color: #f8f9fa;
+            border-left: 4px solid #2ecc71;
+            padding: 12px;
+            margin: 10px 0;
+        }
+        .mermaid {
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .resources {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .checkpoint {
+            background-color: #e8f8f5;
+            padding: 10px;
+            border-left: 4px solid #1abc9c;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>План освоения модуля tx_data_gen</h1>
+    <p><strong>Срок:</strong> 3-4 недели | <strong>Языковой переход:</strong> Verilog → VHDL</p>
+
+    <div class="week">
+        <h2>Неделя 1: Базовое понимание (VHDL + Архитектура)</h2>
+        
+        <div class="tech-card">
+            <h3>1. Синтаксический переход Verilog → VHDL</h3>
+            <ul>
+                <li><strong>Типы данных:</strong> <code>std_logic</code> vs <code>reg/wire</code></li>
+                <li><strong>Процессы:</strong> <code>process</code> vs <code>always</code></li>
+                <li><strong>Интерфейсы:</strong> <code>entity/port</code> vs <code>module/input/output</code></li>
+                <li><strong>Практика:</strong> Переписать простые Verilog-модули на VHDL</li>
+            </ul>
+        </div>
+        
+        <div class="tech-card">
+            <h3>2. Анализ структуры tx_data_gen</h3>
+            <table>
+                <tr>
+                    <th>Компонент</th>
+                    <th>Назначение</th>
+                </tr>
+                <tr>
+                    <td><code>axis_router</code></td>
+                    <td>Маршрутизация AXI-Stream</td>
+                </tr>
+                <tr>
+                    <td><code>radar_sig</code></td>
+                    <td>Генератор радиолокационных сигналов</td>
+                </tr>
+                <tr>
+                    <td><code>jesd_coder</code></td>
+                    <td>Кодирование JESD</td>
+                </tr>
+                <tr>
+                    <td><code>xpm_cdc_array_single</code></td>
+                    <td>Синхронизация доменов тактирования</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="week">
+        <h2>Неделя 2: Ключевые технологии модуля</h2>
+        
+        <div class="tech-card">
+            <h3>1. AXI-Stream Protocol</h3>
+            <p><strong>Сигналы:</strong></p>
+            <pre><code>s_axis_tvalid, s_axis_tready, s_axis_tlast</code></pre>
+            <p><strong>Практика:</strong> Создание простого AXI-Stream модуля на VHDL</p>
+        </div>
+        
+        <div class="tech-card">
+            <h3>2. JESD204B/C</h3>
+            <p><strong>Особенности:</strong></p>
+            <ul>
+                <li>Мультиленточность</li>
+                <li>Выравнивание данных</li>
+            </ul>
+            <p><strong>Критичный код:</strong></p>
+            <pre><code>tx_data(16*(i+1)-1 DOWNTO 16*i) <= lanes_data(16*i+7 DOWNTO 16*i) & lanes_data(16*i+15 DOWNTO 16*i+8);</code></pre>
+        </div>
+        
+        <div class="tech-card">
+            <h3>3. Clock Domain Crossing (CDC)</h3>
+            <p><strong>Реализация в модуле:</strong></p>
+            <pre><code>xpm_cdc_array_single
+GENERIC MAP (DEST_SYNC_FF => 4, WIDTH => 2)
+PORT MAP (dest_out => num_lanes_so, dest_clk => tx_clk, src_in => num_lanes(1 DOWNTO 0));</code></pre>
+        </div>
+    </div>
+
+    <div class="mermaid">
+        <h3>Схема потока данных</h3>
+        <pre>
+graph LR
+    A[AXI-Stream] --> B[axis_router]
+    B --> C1[radar_sig_ch1]
+    B --> C2[radar_sig_ch2]
+    C1 --> D[jesd_coder]
+    C2 --> D
+    D --> E[128-bit output]
+        </pre>
+    </div>
+
+    <div class="resources">
+        <h2>Ресурсы для изучения</h2>
+        <table>
+            <tr>
+                <th>Тема</th>
+                <th>Ресурсы</th>
+            </tr>
+            <tr>
+                <td>VHDL для Verilog-разработчиков</td>
+                <td>
+                    <ul>
+                        <li><a href="https://www.edaplayground.com/" target="_blank">EDA Playground</a></li>
+                        <li>Книга "VHDL for Engineers" (Short, 2008)</li>
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td>JESD204B</td>
+                <td>
+                    <ul>
+                        <li>Спецификация JESD204B.01</li>
+                        <li>Xilinx PG197 (JESD IP Core Guide)</li>
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td>XPM и CDC</td>
+                <td>
+                    <ul>
+                        <li>Xilinx UG974 (XPM Library)</li>
+                        <li>Статья "Clock Domain Crossing Techniques"</li>
+                    </ul>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="checkpoint">
+        <h2>Контрольные точки</h2>
+        <ol>
+            <li><strong>Через 2 недели:</strong> Умение читать VHDL на уровне эквивалента Verilog</li>
+            <li><strong>Через 3 недели:</strong> Полное понимание потока данных в tx_data_gen</li>
+            <li><strong>Конец 4 недели:</strong> Возможность модифицировать модуль под свои задачи</li>
+        </ol>
+    </div>
+</body>
+</html>
