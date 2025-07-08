@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bare-Metal Веб-сервер на Xilinx ZCU102</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        pre {
+            background: #f8f8f8;
+            padding: 10px;
+            border-left: 3px solid #3498db;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .note {
+            background: #e7f5fe;
+            padding: 10px;
+            border-left: 3px solid #3498db;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bare-Metal Веб-сервер на Xilinx ZCU102</h1>
+
+    <div class="note">
+        <p><strong>Примечание:</strong> Под "Bare Metal" подразумевается реализация без операционной системы, с прямым доступом к железу.</p>
+    </div>
+
+    <h2>1. Возможно ли реализовать bare-metal веб-сервер на ZCU102?</h2>
+    <p>Да, но с важными ограничениями:</p>
+    <ul>
+        <li><strong>Нет стандартного сетевого стека TCP/IP</strong> → нужно писать драйвер Ethernet (на основе Xilinx LWIP или своего)</li>
+        <li><strong>Минимальная поддержка HTTP</strong> → придётся реализовать простой парсинг запросов</li>
+        <li><strong>Ограниченная файловая система</strong> → если нужен доступ к файлам (например, HTML), потребуется SPI Flash/SD-карта с драйвером</li>
+    </ul>
+
+    <h2>2. Варианты реализации</h2>
+
+    <h3>Вариант 1: Использование Xilinx Standalone (Bare-Metal) + LWIP</h3>
+    <p>Xilinx предоставляет Lightweight IP (LWIP) для bare-metal решений.</p>
+
+    <h4>Шаги реализации:</h4>
+    <ol>
+        <li><strong>Создать проект в Vitis:</strong>
+            <ul>
+                <li>Настроить процессор Cortex-A53 в Standalone mode</li>
+                <li>Добавить Ethernet (GEM) и LWIP library</li>
+            </ul>
+        </li>
+        <li><strong>Написать HTTP-сервер на LWIP:</strong>
+            <pre><code>#include "lwip/opt.h"
+#include "lwip/tcp.h"
+
+err_t http_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) {
+    if (p != NULL) {
+        // Отправляем простой HTTP-ответ
+        char response[] = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n&lt;h1&gt;Hello from ZCU102 Bare Metal!&lt;/h1&gt;";
+        tcp_write(pcb, response, sizeof(response), TCP_WRITE_FLAG_COPY);
+        tcp_close(pcb);
+        pbuf_free(p);
+    }
+    return ERR_OK;
+}
+
+int main() {
+    struct tcp_pcb *pcb = tcp_new();
+    tcp_bind(pcb, IP_ADDR_ANY, 80);  // Слушаем порт 80
+    tcp_listen(pcb);
+    tcp_accept(pcb, http_recv);      // Обработчик HTTP-запросов
+    while (1) {}                      // Бесконечный цикл
+}</code></pre>
+        </li>
+        <li><strong>Собрать и загрузить в ZCU102:</strong>
+            <ul>
+                <li>Сгенерировать BOOT.BIN (FSBL + Bare-Metal App)</li>
+                <li>Записать на SD-карту и запустить</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h4>Результат:</h4>
+    <p>По адресу <code>http://&lt;IP_ZCU102&gt;</code> будет выводиться <strong>Hello from ZCU102 Bare Metal!</strong></p>
+
+    <h3>Вариант 2: Веб-сервер на FPGA (Hardware Accelerated)</h3>
+    <p>Если нужно максимальное быстродействие:</p>
+    <ul>
+        <li>Реализовать аппаратный HTTP-парсер на Verilog/VHDL</li>
+        <li>Использовать AXI-Stream для передачи данных между PS (ARM) и PL (FPGA)</li>
+    </ul>
+
+    <h2>3. Проблемы и решения</h2>
+    <table>
+        <tr>
+            <th>Проблема</th>
+            <th>Решение</th>
+        </tr>
+        <tr>
+            <td>Нет DHCP</td>
+            <td>Использовать статический IP (<code>xemacps_set_static_ip()</code>)</td>
+        </tr>
+        <tr>
+            <td>Нет файловой системы</td>
+            <td>Хранить HTML в памяти или SPI Flash</td>
+        </tr>
+        <tr>
+            <td>Сложность отладки</td>
+            <td>Подключить UART-логгирование</td>
+        </tr>
+    </table>
+
+    <h2>4. Альтернативы Bare-Metal</h2>
+    <p>Если bare-metal кажется слишком сложным:</p>
+    <ol>
+        <li><strong>Petalinux + Nginx</strong> (лёгкий вариант)</li>
+        <li><strong>FreeRTOS + LWIP</strong> (более лёгкий, чем bare-metal, но с RTOS)</li>
+    </ol>
+
+    <h2>Вывод</h2>
+    <p>Bare-metal веб-сервер на <strong>ZCU102</strong> возможен, но требует:</p>
+    <ul>
+        <li>Написания драйверов Ethernet (LWIP)</li>
+        <li>Реализации простого HTTP-стека</li>
+        <li>Отладки через UART</li>
+    </ul>
+
+    <div class="note">
+        <p><strong>Рекомендация:</strong> Если не нужна максимальная производительность, используйте <strong>Petalinux + Nginx</strong>. Для экспериментов с bare-metal попробуйте <strong>LWIP + Standalone</strong>.</p>
+    </div>
+</body>
+</html>
