@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройка sudo без пароля для конкретной команды</title>
+    <style>
+        body {
+            font-family: 'Ubuntu', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #E95420;
+            text-align: center;
+            border-bottom: 2px solid #E95420;
+            padding-bottom: 10px;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Ubuntu Mono', monospace;
+            margin: 10px 0;
+        }
+        .step {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #ddd;
+        }
+        .step:last-child {
+            border-bottom: none;
+        }
+        .step-number {
+            display: inline-block;
+            background-color: #E95420;
+            color: white;
+            width: 25px;
+            height: 25px;
+            text-align: center;
+            border-radius: 50%;
+            margin-right: 10px;
+            line-height: 25px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Настройка sudo без пароля для конкретной команды</h1>
+    
+    <div class="container">
+        <div class="warning">
+            <strong>Безопасный способ</strong> — разрешить sudo для команды <code>./mp709</code> без пароля.
+        </div>
+        
+        <div class="step">
+            <div class="step-number">1</div>
+            <h3>Откройте файл /etc/sudoers</h3>
+            <p>Используйте команду <code>visudo</code> (никогда не редактируйте этот файл напрямую!):</p>
+            <div class="code-block">sudo visudo</div>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">2</div>
+            <h3>Добавьте строку в конец файла</h3>
+            <p>Замените <code>username</code> на ваше имя пользователя и укажите полный путь к файлу:</p>
+            <div class="code-block">username ALL=(ALL) NOPASSWD: /путь/к/mp709</div>
+            <p>Пример:</p>
+            <div class="code-block">vasya ALL=(ALL) NOPASSWD: /home/vasya/mp709</div>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">3</div>
+            <h3>Сохранение изменений</h3>
+            <p>В редакторе nano (который открывается через visudo):</p>
+            <div class="code-block">Ctrl+X → Y → Enter</div>
+            <p>Это сохранит изменения и проверит синтаксис перед записью.</p>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">4</div>
+            <h3>Проверка работы</h3>
+            <p>Теперь ваш алиас будет работать без пароля:</p>
+            <div class="code-block">alias on='sudo ./mp709 off all'</div>
+            <p>Проверьте выполнение команды - пароль запрашиваться не должен.</p>
+        </div>
+        
+        <div class="warning">
+            <strong>Важно:</strong> Будьте осторожны при редактировании файла sudoers. 
+            Ошибки могут заблокировать доступ к sudo. Всегда используйте <code>visudo</code>, 
+            который проверяет синтаксис перед сохранением.
+        </div>
+    </div>
+</body>
+</html>
