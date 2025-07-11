@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADRV9026 Control System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            max-width: 1200px;
+            margin: auto;
+            color: #333;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        h1 {
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            margin-top: 30px;
+            color: #2980b9;
+        }
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border-left: 4px solid #3498db;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .features {
+            background-color: #eaf2f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .feature-item {
+            margin-bottom: 10px;
+        }
+        .usage {
+            background-color: #e8f8f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>ADRV9026 Control System</h1>
+    <p>Полный код с подробной отладкой и комментариями для каждого шага</p>
+
+    <div class="section">
+        <h2>1. Очистка и инициализация</h2>
+        <pre><code>%% 1. Очистка и инициализация
+clear; close all; clc;
+disp('=== ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ ===');
+
+% Вызываем функцию инициализации
+zynqmp_init; 
+disp('Инициализация завершена. Основные параметры:');
+disp(['IP адрес: ', url]);
+disp(['Частота дискретизации TX: ', num2str(tx_fs/1e6), ' MHz']);
+disp(['Размер TX буфера: ', num2str(tx_mem_len), ' отсчетов']);</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>2. Конфигурация параметров</h2>
+        <pre><code>%% 2. Конфигурация параметров
+disp('=== НАСТРОЙКА ПАРАМЕТРОВ ===');
+params2 = struct();
+% Параметры гетеродинов
+params2.LoFreq1 = 2.2e9;     % 2.2 ГГц для LO1 (каналы 1-2)
+params2.LoFreq2 = 4.2e9;     % 4.2 ГГц для LO2 (каналы 3-4)
+params2.ChangeLo1 = 1;       % Флаг изменения LO1
+params2.ChangeLo2 = 1;       % Флаг изменения LO2
+params2.InitCals = 1;        % Автоматическая калибровка
+
+% Параметры сигнала
+params2.dF = 0;              % Девиация частоты (0 для тона)
+params2.Duration = 1e-3;     % Длительность 1 мс
+params2.Freq = 3e6;          % Частота 3 МГц
+params2.Amplitude = 0.5;     % Амплитуда 50%
+params2.Tone = 1;            % Тональный сигнал
+params2.Chirp = 0;           % Чирп отключен
+params2.File = 0;            % Генерация сигнала (не из файла)
+params2.TxLoadMask = 15;     % Все 4 канала (1111 в бинарном)
+params2.LoadSignal = 1;      % Активировать загрузку
+params2_updated = true;
+
+% Выводим параметры для проверки
+disp('Параметры конфигурации:');
+disp(struct2table(params2));</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>3. Установка частот гетеродинов</h2>
+        <pre><code>%% 3. Установка частот гетеродинов
+disp('=== НАСТРОЙКА ГЕТЕРОДИНОВ ===');
+
+if params2.ChangeLo1
+    fprintf('Устанавливаю LO1 на %.2f GHz...\n', params2.LoFreq1/1e9);
+    tic;
+    set_lo_freq(url, 1, params2.LoFreq1, params2.InitCals);
+    fprintf('LO1 установлен за %.2f сек\n', toc);
+    params2.ChangeLo1 = 0;
+    
+    % Проверка через API (дополнительная)
+    try
+        check = webread([url '/check_lo?num=1'], weboptions('Timeout',2));
+        disp(['Статус LO1: ', check.status]);
+    catch
+        disp('Невозможно проверить статус LO1');
+    end
+end
+
+if params2.ChangeLo2
+    fprintf('Устанавливаю LO2 на %.2f GHz...\n', params2.LoFreq2/1e9);
+    tic;
+    set_lo_freq(url, 2, params2.LoFreq2, params2.InitCals);
+    fprintf('LO2 установлен за %.2f сек\n', toc);
+    params2.ChangeLo2 = 0;
+end</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>4. Генерация и загрузка сигнала</h2>
+        <pre><code>%% 4. Генерация и загрузка сигнала
+disp('=== ЗАГРУЗКА СИГНАЛА ===');
+
+if params2.LoadSignal
+    if params2.File
+        disp('Загрузка сигнала из файла...');
+        load_file(url, params2.TxLoadMask, tx_mem_len);
+    else
+        % Генерация тестового сигнала
+        disp('Генерация тонального сигнала:');
+        fprintf('Частота: %.2f MHz, Амплитуда: %.1f\n', ...
+                params2.Freq/1e6, params2.Amplitude);
+        
+        % Визуализация сигнала перед отправкой
+        t = 0:1/tx_fs:params2.Duration;
+        test_sig = params2.Amplitude * exp(1j*2*pi*params2.Freq*t);
+        
+        figure;
+        subplot(2,1,1);
+        plot(t(1:100), real(test_sig(1:100)), 'b');
+        hold on; plot(t(1:100), imag(test_sig(1:100)), 'r');
+        title('Сгенерированный сигнал (первые 100 отсчетов)');
+        legend('I компонента', 'Q компонента');
+        xlabel('Время, сек'); ylabel('Амплитуда');
+        
+        subplot(2,1,2);
+        pwelch(test_sig, [], [], [], tx_fs, 'centered');
+        title('Спектр сигнала');
+        
+        % Загрузка на устройство
+        disp('Отправка сигнала на устройство...');
+        tic;
+        load_signal(url, params2.Chirp, params2.Amplitude, ...
+                   params2.Freq, params2.dF, params2.Duration, ...
+                   params2.TxLoadMask, tx_fs, tx_mem_len);
+        fprintf('Сигнал загружен за %.2f сек\n', toc);
+    end
+    params2.LoadSignal = 0;
+end</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>5. Проверка работы системы</h2>
+        <pre><code>%% 5. Проверка работы системы
+disp('=== ПРОВЕРКА РАБОТОСПОСОБНОСТИ ===');
+
+% Включение всех каналов
+disp('Активация каналов...');
+enable_channels(url, 15, 15, 0, 1, 1); % Все RX/TX, оба LO
+
+% Чтение данных
+disp('Чтение данных с приемников...');
+[sig1, sig2, sig3, sig4] = read_rx_data(url, step, ch1_offset, ch2_offset, ch3_offset, ch4_offset);
+
+% Анализ данных
+disp('Анализ принятых данных:');
+channels = {'1 (LO1)', '2 (LO1)', '3 (LO2)', '4 (LO2)'};
+signals = {sig1, sig2, sig3, sig4};
+
+figure;
+for k = 1:4
+    if ~isempty(signals{k})
+        subplot(2,2,k);
+        pwelch(signals{k}, [], [], [], rx_fs, 'centered');
+        title(['Канал ', channels{k}]);
+        fprintf('Канал %s: мощность = %.2f дБ\n', ...
+                channels{k}, 10*log10(mean(abs(signals{k}).^2)));
+    else
+        fprintf('Канал %s: нет данных!\n', channels{k});
+    end
+end</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>6. Сохранение результатов</h2>
+        <pre><code>%% 6. Сохранение результатов
+save('last_config.mat', 'params2', 'sig1', 'sig2', 'sig3', 'sig4');
+disp('Результаты сохранены в last_config.mat');</code></pre>
+    </div>
+
+    <div class="features">
+        <h2>Ключевые особенности кода:</h2>
+        <div class="feature-item"><strong>Комплексная отладка:</strong>
+            <ul>
+                <li>Визуализация сигнала перед отправкой</li>
+                <li>Замер времени выполнения операций</li>
+                <li>Проверка статуса через дополнительные API-запросы</li>
+            </ul>
+        </div>
+        <div class="feature-item"><strong>Контрольные точки:</strong>
+            <ul>
+                <li>Вывод всех ключевых параметров</li>
+                <li>Проверка мощности в каждом канале</li>
+                <li>Автоматическое сохранение результатов</li>
+            </ul>
+        </div>
+        <div class="feature-item"><strong>Визуализация:</strong>
+            <ul>
+                <li>Осциллограмма I/Q компонент</li>
+                <li>Спектры всех каналов</li>
+                <li>Графики в отдельных subplot</li>
+            </ul>
+        </div>
+        <div class="feature-item"><strong>Обработка ошибок:</strong>
+            <ul>
+                <li>try-catch блоки для дополнительных проверок</li>
+                <li>Проверка наличия данных в каналах</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="usage">
+        <h2>Как использовать:</h2>
+        <ol>
+            <li><strong>Запустите код</strong> - он выполнит полный цикл:
+                <ul>
+                    <li>Инициализация</li>
+                    <li>Настройка LO</li>
+                    <li>Генерация и загрузка сигнала</li>
+                    <li>Чтение и анализ данных</li>
+                </ul>
+            </li>
+            <li><strong>Для отладки:</strong>
+                <ul>
+                    <li>Проверяйте графики сигналов</li>
+                    <li>Анализируйте вывод в командном окне</li>
+                    <li>Изучите сохраненные данные в last_config.mat</li>
+                </ul>
+            </li>
+            <li><strong>Для модификации:</strong>
+                <ul>
+                    <li>Измените параметры в секции 2</li>
+                    <li>Добавьте свои проверки в секцию 5</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h2>Технические параметры</h2>
+        <table>
+            <tr>
+                <th>Параметр</th>
+                <th>Значение</th>
+                <th>Описание</th>
+            </tr>
+            <tr>
+                <td>LO1 Частота</td>
+                <td>2.2 ГГц</td>
+                <td>Для каналов 1-2</td>
+            </tr>
+            <tr>
+                <td>LO2 Частота</td>
+                <td>4.2 ГГц</td>
+                <td>Для каналов 3-4</td>
+            </tr>
+            <tr>
+                <td>Частота сигнала</td>
+                <td>3 МГц</td>
+                <td>Тональный сигнал</td>
+            </tr>
+            <tr>
+                <td>Размер буфера TX</td>
+                <td>65536 отсчетов</td>
+                <td>Память FPGA</td>
+            </tr>
+        </table>
+    </div>
+
+    <p>Этот код обеспечивает полный контроль над всеми этапами работы с ADRV9026 и помогает быстро выявлять любые проблемы в системе.</p>
+</body>
+</html>
