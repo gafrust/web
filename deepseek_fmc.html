@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обсуждение FMC-плат и ЦАП для ZCU102</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .conversation {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .question {
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+        .answer {
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border-left: 3px solid #3498db;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .highlight {
+            background-color: #fffde7;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Обсуждение FMC-плат и ЦАП для ZCU102</h1>
+    
+    <div class="conversation">
+        <h2>Часть 1: FMC-платы для ZCU102</h2>
+        
+        <div class="question">Какие ответные платы с FMC разъёмом есть для ZCU102?</div>
+        <div class="answer">
+            <p>На платформе <strong>ZCU102</strong> (Xilinx Zynq UltraScale+ MPSoC) можно использовать различные ответные платы с разъёмом <strong>FMC</strong>:</p>
+            
+            <h3>1. Официальные платы от Xilinx (AMD)</h3>
+            <ul>
+                <li><strong>FMC-HDMI</strong> – плата для ввода/вывода HDMI</li>
+                <li><strong>FMC-SDI</strong> – плата для работы с SDI-видео</li>
+                <li><strong>FMC-IMAGEON</strong> – для обработки изображений</li>
+                <li><strong>FMC-QSFP</strong> – для высокоскоростных оптических интерфейсов QSFP</li>
+                <li><strong>FMC-JESD</strong> – для высокоскоростных АЦП/ЦАП по стандарту JESD204B</li>
+            </ul>
+            
+            <h3>2. Сторонние FMC-платы</h3>
+            <h4>Аналоговые и цифровые интерфейсы</h4>
+            <ul>
+                <li><strong>Analog Devices (ADI)</strong>
+                    <ul>
+                        <li><strong>AD-FMCOMMS2/3/4</strong> – платы для SDR</li>
+                        <li><strong>AD-FMCADC3/4</strong> – высокоскоростные АЦП (до 3 Гвыб/с)</li>
+                    </ul>
+                </li>
+                <li><strong>Texas Instruments (TI)</strong>
+                    <ul>
+                        <li><strong>TSW14J56</strong> – интерфейс для высокоскоростных АЦП (JESD204B)</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        
+        <h2>Часть 2: Характеристики ЦАП</h2>
+        
+        <div class="question">Какая полоса у ЦАП AD9767?</div>
+        <div class="answer">
+            <p><strong>AD9767</strong> — это 16-разрядный ЦАП с полосой сигнала до <span class="highlight">125 MSPS</span>:</p>
+            
+            <table>
+                <tr>
+                    <th>Характеристика</th>
+                    <th>Значение</th>
+                </tr>
+                <tr>
+                    <td>Разрешение</td>
+                    <td>16 бит</td>
+                </tr>
+                <tr>
+                    <td>Частота обновления</td>
+                    <td>до 125 MSPS</td>
+                </tr>
+                <tr>
+                    <td>Полоса пропускания (3 дБ)</td>
+                    <td>~100 MHz</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="question">На каких частотах работает AD9144?</div>
+        <div class="answer">
+            <p><strong>AD9144</strong> — высокоскоростной 16-разрядный ЦАП с характеристиками:</p>
+            
+            <table>
+                <tr>
+                    <th>Характеристика</th>
+                    <th>Значение</th>
+                </tr>
+                <tr>
+                    <td>Максимальная частота дискретизации</td>
+                    <td>2.5 GSPS</td>
+                </tr>
+                <tr>
+                    <td>Полоса пропускания (3 дБ)</td>
+                    <td>~1 ГГц</td>
+                </tr>
+                <tr>
+                    <td>Интерфейс</td>
+                    <td>JESD204B (до 12.5 Gbps)</td>
+                </tr>
+            </table>
+            
+            <h3>Сравнение ЦАП</h3>
+            <table>
+                <tr>
+                    <th>Модель</th>
+                    <th>Разрядность</th>
+                    <th>Макс. частота</th>
+                    <th>Полоса (3 дБ)</th>
+                </tr>
+                <tr>
+                    <td>AD9144</td>
+                    <td>16 бит</td>
+                    <td>2.5 GSPS</td>
+                    <td>~1 ГГц</td>
+                </tr>
+                <tr>
+                    <td>AD9122</td>
+                    <td>16 бит</td>
+                    <td>1.23 GSPS</td>
+                    <td>~500 МГц</td>
+                </tr>
+                <tr>
+                    <td>AD9767</td>
+                    <td>16 бит</td>
+                    <td>125 MSPS</td>
+                    <td>~100 МГц</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <h2>Заключение</h2>
+    <p>Для платы ZCU102 доступно множество FMC-модулей с различными интерфейсами. Выбор конкретного решения зависит от задач:</p>
+    <ul>
+        <li>Для <strong>высокочастотных применений</strong> (SDR, 5G) лучше подходит <strong>AD9144</strong></li>
+        <li>Для <strong>средних частот</strong> можно использовать <strong>AD9122</strong></li>
+        <li>Для <strong>низкочастотных задач</strong> подойдёт <strong>AD9767</strong></li>
+    </ul>
+</body>
+</html>
