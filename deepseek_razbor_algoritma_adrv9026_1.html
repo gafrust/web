@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADRV9026 Control Panel</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            flex: 1;
+            min-width: 300px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        input, select {
+            padding: 8px;
+            margin: 5px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .plot {
+            width: 100%;
+            height: 300px;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            color: black;
+        }
+        .tab button:hover {
+            background-color: #ddd;
+        }
+        .tab button.active {
+            background-color: #ccc;
+        }
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>ADRV9026 Control Panel</h1>
+    
+    <div class="tab">
+        <button class="tablinks active" onclick="openTab(event, 'config')">Конфигурация</button>
+        <button class="tablinks" onclick="openTab(event, 'signal')">Генерация сигнала</button>
+        <button class="tablinks" onclick="openTab(event, 'monitor')">Мониторинг</button>
+    </div>
+    
+    <div id="config" class="tabcontent" style="display: block;">
+        <div class="container">
+            <div class="panel">
+                <h2>Настройка гетеродинов</h2>
+                
+                <div>
+                    <label for="lo1-freq">LO1 Частота (ГГц):</label>
+                    <input type="number" id="lo1-freq" step="0.01" min="0.1" max="6" value="2.2">
+                </div>
+                
+                <div>
+                    <label for="lo2-freq">LO2 Частота (ГГц):</label>
+                    <input type="number" id="lo2-freq" step="0.01" min="0.1" max="6" value="4.2">
+                </div>
+                
+                <div>
+                    <label>
+                        <input type="checkbox" id="init-cals" checked> Выполнить калибровку
+                    </label>
+                </div>
+                
+                <button onclick="setLOFrequencies()">Установить частоты LO</button>
+                
+                <div class="status" id="lo-status">
+                    Статус: Ожидание настройки...
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>Настройка каналов</h2>
+                
+                <div>
+                    <label>Активные каналы:</label><br>
+                    <label><input type="checkbox" name="rx-channels" value="1" checked> RX1</label>
+                    <label><input type="checkbox" name="rx-channels" value="2" checked> RX2</label>
+                    <label><input type="checkbox" name="rx-channels" value="4" checked> RX3</label>
+                    <label><input type="checkbox" name="rx-channels" value="8" checked> RX4</label>
+                </div>
+                
+                <div>
+                    <label>Активные LO:</label><br>
+                    <label><input type="checkbox" name="lo-active" value="1" checked> LO1 (Каналы 1-2)</label>
+                    <label><input type="checkbox" name="lo-active" value="2" checked> LO2 (Каналы 3-4)</label>
+                </div>
+                
+                <button onclick="enableChannels()">Активировать каналы</button>
+                
+                <div class="status" id="channel-status">
+                    Статус: Каналы не настроены
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="signal" class="tabcontent">
+        <div class="container">
+            <div class="panel">
+                <h2>Параметры сигнала</h2>
+                
+                <div>
+                    <label for="signal-type">Тип сигнала:</label>
+                    <select id="signal-type">
+                        <option value="tone">Тональный сигнал</option>
+                        <option value="chirp">Чирп-сигнал</option>
+                        <option value="file">Из файла</option>
+                    </select>
+                </div>
+                
+                <div id="tone-params">
+                    <div>
+                        <label for="tone-freq">Частота (МГц):</label>
+                        <input type="number" id="tone-freq" step="0.1" value="3">
+                    </div>
+                    <div>
+                        <label for="tone-amp">Амплитуда (0-1):</label>
+                        <input type="number" id="tone-amp" step="0.1" min="0" max="1" value="0.5">
+                    </div>
+                </div>
+                
+                <div id="chirp-params" style="display: none;">
+                    <div>
+                        <label for="chirp-start">Начальная частота (МГц):</label>
+                        <input type="number" id="chirp-start" step="0.1" value="1">
+                    </div>
+                    <div>
+                        <label for="chirp-end">Конечная частота (МГц):</label>
+                        <input type="number" id="chirp-end" step="0.1" value="10">
+                    </div>
+                    <div>
+                        <label for="chirp-duration">Длительность (мс):</label>
+                        <input type="number" id="chirp-duration" step="0.1" value="1">
+                    </div>
+                </div>
+                
+                <div id="file-params" style="display: none;">
+                    <div>
+                        <label for="signal-file">Файл сигнала:</label>
+                        <input type="file" id="signal-file">
+                    </div>
+                </div>
+                
+                <div>
+                    <label>Целевые каналы:</label><br>
+                    <label><input type="checkbox" name="tx-channels" value="1" checked> TX1</label>
+                    <label><input type="checkbox" name="tx-channels" value="2" checked> TX2</label>
+                    <label><input type="checkbox" name="tx-channels" value="4" checked> TX3</label>
+                    <label><input type="checkbox" name="tx-channels" value="8" checked> TX4</label>
+                </div>
+                
+                <button onclick="generateSignal()">Сгенерировать и загрузить</button>
+                
+                <div class="status" id="signal-status">
+                    Статус: Сигнал не загружен
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>Предпросмотр сигнала</h2>
+                <div id="signal-plot" class="plot"></div>
+                <div id="spectrum-plot" class="plot"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="monitor" class="tabcontent">
+        <div class="container">
+            <div class="panel">
+                <h2>Мониторинг каналов</h2>
+                
+                <button onclick="readData()">Считать данные</button>
+                
+                <div>
+                    <label for="fft-size">Размер FFT:</label>
+                    <select id="fft-size">
+                        <option value="1024">1024</option>
+                        <option value="2048">2048</option>
+                        <option value="4096">4096</option>
+                        <option value="8192">8192</option>
+                        <option value="16384">16384</option>
+                        <option value="32768">32768</option>
+                        <option value="65536" selected>65536</option>
+                    </select>
+                </div>
+                
+                <div class="status" id="monitor-status">
+                    Статус: Данные не считаны
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>Спектры каналов</h2>
+                <div id="channel1-plot" class="plot"></div>
+                <div id="channel2-plot" class="plot"></div>
+                <div id="channel3-plot" class="plot"></div>
+                <div id="channel4-plot" class="plot"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Переменные для хранения данных
+        let lastSignal = null;
+        let channelData = [[], [], [], []];
+        
+        // Функции для работы с вкладками
+        function openTab(evt, tabName) {
+            let tabcontent = document.getElementsByClassName("tabcontent");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            
+            let tablinks = document.getElementsByClassName("tablinks");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        
+        // Обработчик изменения типа сигнала
+        document.getElementById('signal-type').addEventListener('change', function() {
+            document.getElementById('tone-params').style.display = 'none';
+            document.getElementById('chirp-params').style.display = 'none';
+            document.getElementById('file-params').style.display = 'none';
+            
+            if (this.value === 'tone') {
+                document.getElementById('tone-params').style.display = 'block';
+            } else if (this.value === 'chirp') {
+                document.getElementById('chirp-params').style.display = 'block';
+            } else {
+                document.getElementById('file-params').style.display = 'block';
+            }
+        });
+        
+        // Функция установки частот LO
+        function setLOFrequencies() {
+            const lo1Freq = parseFloat(document.getElementById('lo1-freq').value) * 1e9;
+            const lo2Freq = parseFloat(document.getElementById('lo2-freq').value) * 1e9;
+            const initCals = document.getElementById('init-cals').checked;
+            
+            document.getElementById('lo-status').textContent = "Установка частот...";
+            
+            // Здесь должен быть вызов MATLAB API
+            // Примерно так:
+            fetch('/matlab-api/set_lo_freq', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    lo1: lo1Freq,
+                    lo2: lo2Freq,
+                    initCals: initCals
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('lo-status').textContent = 
+                    `LO1 установлен на ${lo1Freq/1e9} ГГц, LO2 на ${lo2Freq/1e9} ГГц. Время: ${data.time.toFixed(2)} сек`;
+            })
+            .catch(error => {
+                document.getElementById('lo-status').textContent = 
+                    `Ошибка: ${error.message}`;
+            });
+        }
+        
+        // Функция активации каналов
+        function enableChannels() {
+            const rxCheckboxes = document.querySelectorAll('input[name="rx-channels"]:checked');
+            const loCheckboxes = document.querySelectorAll('input[name="lo-active"]:checked');
+            
+            let rxMask = 0;
+            rxCheckboxes.forEach(cb => rxMask += parseInt(cb.value));
+            
+            let lo1Active = 0, lo2Active = 0;
+            loCheckboxes.forEach(cb => {
+                if (cb.value === "1") lo1Active = 1;
+                if (cb.value === "2") lo2Active = 1;
+            });
+            
+            document.getElementById('channel-status').textContent = "Активация каналов...";
+            
+            // Вызов MATLAB API
+            fetch('/matlab-api/enable_channels', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    rxMask: rxMask,
+                    lo1: lo1Active,
+                    lo2: lo2Active
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('channel-status').textContent = 
+                    `Каналы активированы. RX маска: ${data.rxMask}, LO1: ${data.lo1}, LO2: ${data.lo2}`;
+            })
+            .catch(error => {
+                document.getElementById('channel-status').textContent = 
+                    `Ошибка: ${error.message}`;
+            });
+        }
+        
+        // Функция генерации и загрузки сигнала
+        function generateSignal() {
+            const signalType = document.getElementById('signal-type').value;
+            const txCheckboxes = document.querySelectorAll('input[name="tx-channels"]:checked');
+            let txMask = 0;
+            txCheckboxes.forEach(cb => txMask += parseInt(cb.value));
+            
+            document.getElementById('signal-status').textContent = "Генерация сигнала...";
+            
+            let signalParams = { txMask: txMask };
+            
+            if (signalType === 'tone') {
+                signalParams.type = 'tone';
+                signalParams.freq = parseFloat(document.getElementById('tone-freq').value) * 1e6;
+                signalParams.amp = parseFloat(document.getElementById('tone-amp').value;
+                
+                // Генерация сигнала для предпросмотра
+                const fs = 245.76e6; // Частота дискретизации
+                const duration = 1e-3; // 1 мс
+                const t = Array.from({length: 100}, (_, i) => i/fs*1000); // Первые 100 отсчетов в мс
+                const signal = t.map(x => signalParams.amp * Math.cos(2*Math.PI*signalParams.freq*x/1000));
+                
+                plotSignal(t, signal, signalParams.freq, fs);
+                
+            } else if (signalType === 'chirp') {
+                signalParams.type = 'chirp';
+                signalParams.startFreq = parseFloat(document.getElementById('chirp-start').value) * 1e6;
+                signalParams.endFreq = parseFloat(document.getElementById('chirp-end').value) * 1e6;
+                signalParams.duration = parseFloat(document.getElementById('chirp-duration').value) * 1e-3;
+                
+                // Генерация чирпа для предпросмотра (упрощенная версия)
+                const fs = 245.76e6;
+                const t = Array.from({length: 100}, (_, i) => i/fs*1000);
+                const bw = signalParams.endFreq - signalParams.startFreq;
+                const signal = t.map(x => 0.5 * Math.cos(2*Math.PI*(signalParams.startFreq + bw*x/2/duration)*x/1000));
+                
+                plotSignal(t, signal, (signalParams.startFreq + signalParams.endFreq)/2, fs);
+                
+            } else {
+                signalParams.type = 'file';
+                const fileInput = document.getElementById('signal-file');
+                if (fileInput.files.length === 0) {
+                    document.getElementById('signal-status').textContent = "Ошибка: файл не выбран";
+                    return;
+                }
+                // Здесь должна быть обработка файла
+            }
+            
+            // Сохраняем сгенерированный сигнал
+            lastSignal = signalParams;
+            
+            // Вызов MATLAB API для загрузки сигнала
+            fetch('/matlab-api/load_signal', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(signalParams)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('signal-status').textContent = 
+                    `Сигнал загружен. Тип: ${signalParams.type}, каналы: ${txMask.toString(2)}`;
+            })
+            .catch(error => {
+                document.getElementById('signal-status').textContent = 
+                    `Ошибка: ${error.message}`;
+            });
+        }
+        
+        // Функция чтения данных с каналов
+        function readData() {
+            const fftSize = parseInt(document.getElementById('fft-size').value);
+            
+            document.getElementById('monitor-status').textContent = "Чтение данных...";
+            
+            // Вызов MATLAB API
+            fetch('/matlab-api/read_data?fftSize=' + fftSize)
+            .then(response => response.json())
+            .then(data => {
+                channelData = data.channels;
+                document.getElementById('monitor-status').textContent = 
+                    `Данные получены. Размер FFT: ${fftSize}`;
+                
+                // Отображение спектров
+                plotChannelSpectrum(0, 'channel1-plot', 'Канал 1 (LO1)');
+                plotChannelSpectrum(1, 'channel2-plot', 'Канал 2 (LO1)');
+                plotChannelSpectrum(2, 'channel3-plot', 'Канал 3 (LO2)');
+                plotChannelSpectrum(3, 'channel4-plot', 'Канал 4 (LO2)');
+            })
+            .catch(error => {
+                document.getElementById('monitor-status').textContent = 
+                    `Ошибка: ${error.message}`;
+            });
+        }
+        
+        // Функция для отображения сигнала
+        function plotSignal(t, signal, freq, fs) {
+            // Осциллограмма
+            Plotly.newPlot('signal-plot', [{
+                x: t,
+                y: signal,
+                mode: 'lines',
+                name: 'Сигнал'
+            }], {
+                title: 'Осциллограмма сигнала (первые 100 отсчетов)',
+                xaxis: { title: 'Время, мс' },
+                yaxis: { title: 'Амплитуда' }
+            });
+            
+            // Спектр (упрощенный расчет)
+            const n = signal.length;
+            const fft = new Array(n/2);
+            const freqAxis = new Array(n/2);
+            for (let i = 0; i < n/2; i++) {
+                freqAxis[i] = (i * fs / n - fs/2) / 1e6; // в MHz
+            }
+            
+            // Простое DFT для демонстрации
+            for (let k = 0; k < n/2; k++) {
+                let re = 0, im = 0;
+                for (let i = 0; i < n; i++) {
+                    const angle = 2 * Math.PI * k * i / n;
+                    re += signal[i] * Math.cos(angle);
+                    im -= signal[i] * Math.sin(angle);
+                }
+                fft[k] = Math.sqrt(re*re + im*im) / n;
+            }
+            
+            Plotly.newPlot('spectrum-plot', [{
+                x: freqAxis,
+                y: fft,
+                mode: 'lines',
+                name: 'Спектр'
+            }], {
+                title: 'Спектр сигнала',
+                xaxis: { title: 'Частота, МГц' },
+                yaxis: { title: 'Амплитуда', type: 'log' }
+            });
+        }
+        
+        // Функция для отображения спектров каналов
+        function plotChannelSpectrum(channelIndex, elementId, title) {
+            if (!channelData[channelIndex] || channelData[channelIndex].length === 0) {
+                document.getElementById(elementId).innerHTML = `<p>Нет данных для ${title}</p>`;
+                return;
+            }
+            
+            // Простое отображение (в реальности нужно использовать FFT)
+            Plotly.newPlot(elementId, [{
+                y: channelData[channelIndex],
+                mode: 'lines',
+                name: title
+            }], {
+                title: title,
+                yaxis: { title: 'Амплитуда' }
+            });
+        }
+    </script>
+</body>
+</html>
