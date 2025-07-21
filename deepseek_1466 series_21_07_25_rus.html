@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление приборами через VISA по сети</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            border-radius: 0 4px 4px 0;
+        }
+        .note {
+            background-color: #e7f5fe;
+            border-left: 4px solid #2980b9;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .step {
+            background-color: #e8f8f5;
+            border-left: 4px solid #2ecc71;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .step-number {
+            font-weight: bold;
+            color: #27ae60;
+        }
+        .keyword {
+            color: #c7254e;
+            font-weight: bold;
+        }
+        .comment {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .warning {
+            background-color: #fdecea;
+            border-left: 4px solid #e53935;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Управление приборами через VISA по сети</h1>
+    <p>Данный пример демонстрирует удаленное управление генератором сигналов по TCP/IP с использованием VISA API на C++.</p>
+
+    <div class="note">
+        <strong>Примечание:</strong> Для работы этого кода требуется установленная среда VISA (NI-VISA или Keysight VISA) и правильная сетевая конфигурация прибора.
+    </div>
+
+    <h2>Полный исходный код</h2>
+    <div class="code-block">
+<pre><code>/**************************************************************
+Реализация удаленного управления через библиотеку VISA на C++
+Пример демонстрирует управление генератором сигналов по TCP/IP
+с использованием VISA (Virtual Instrument Software Architecture).
+**************************************************************/
+
+<span class="keyword">#include</span> <span class="comment">"stdafx.h"</span>       <span class="comment">// Предкомпилированный заголовок для MSVC</span>
+<span class="keyword">#include</span> &lt;visa.h&gt;         <span class="comment">// Основной заголовочный файл VISA</span>
+<span class="keyword">#include</span> &lt;stdio.h&gt;        <span class="comment">// Стандартные функции ввода/вывода</span>
+<span class="keyword">#include</span> &lt;stdlib.h&gt;       <span class="comment">// Стандартные библиотечные функции</span>
+
+<span class="comment">// Параметры подключения устройства</span>
+<span class="keyword">#define</span> SOURCE_IP_ADDR_A <span class="comment">"192.168.1.199"</span>  <span class="comment">// IP-адрес генератора сигналов</span>
+<span class="keyword">#define</span> SOURCE_SOCKET_PORT 5025           <span class="comment">// TCP-порт генератора</span>
+
+<span class="comment">// Вспомогательная функция для отображения сообщений</span>
+<span class="keyword">void</span> ShowMsg(PCHAR lpszText) {
+<span class="keyword">#ifdef</span> _UNICODE
+    AfxMessageBox((CString)lpszText);  <span class="comment">// Версия для Unicode</span>
+<span class="keyword">#else</span>
+    AfxMessageBox(lpszText);           <span class="comment">// ANSI-версия</span>
+<span class="keyword">#endif</span>
+}
+
+<span class="comment">// Основная функция управления прибором</span>
+<span class="keyword">void</span> SocketTest1(<span class="keyword">void</span>) {
+    ViSession defaultRM;    <span class="comment">// Сессия менеджера ресурсов по умолчанию</span>
+    ViSession vi;           <span class="comment">// Дескриптор сессии прибора</span>
+    ViStatus iStatus = 0;   <span class="comment">// Код состояния</span>
+    ViChar rgcSocket[VI_FIND_BUFLEN];  <span class="comment">// Буфер для идентификации устройства</span>
+    ViChar rgcBuf[256];     <span class="comment">// Универсальный буфер</span>
+    <span class="keyword">double</span> dFreq = 0.0;     <span class="comment">// Хранение значения частоты</span>
+
+    <span class="comment">// 1. Инициализация менеджера ресурсов VISA</span>
+    iStatus = viOpenDefaultRM(&amp;defaultRM);
+    <span class="keyword">if</span> (iStatus &lt; VI_SUCCESS) {
+        ShowMsg(<span class="comment">"Не удалось открыть менеджер ресурсов VISA!"</span>);
+        <span class="keyword">return</span>;
+    }
+
+    <span class="comment">// 2. Установка соединения с прибором</span>
+    sprintf(rgcSocket, <span class="comment">"TCPIP::%s::%d::SOCKET"</span>, SOURCE_IP_ADDR_A, SOURCE_SOCKET_PORT);
+    iStatus = viOpen(defaultRM, rgcSocket, VI_NULL, VI_NULL, &amp;vi);
+    <span class="keyword">if</span> (iStatus &lt; VI_SUCCESS) {
+        ShowMsg(<span class="comment">"Не удалось подключиться к прибору!"</span>);
+        viClose(defaultRM);
+        <span class="keyword">return</span>;
+    }
+
+    <span class="comment">// 3. Настройка параметров связи</span>
+    viSetAttribute(vi, VI_ATTR_TERMCHAR_EN, VI_TRUE);  <span class="comment">// Включить терминатор</span>
+    viSetAttribute(vi, VI_ATTR_TMO_VALUE, 5000);       <span class="comment">// Таймаут 5 секунд</span>
+    viSetAttribute(vi, VI_ATTR_TERMCHAR, '\n');        <span class="comment">// Установить терминатор новой строки</span>
+
+    <span class="comment">// 4. Запрос текущей частоты прибора</span>
+    viPrintf(vi, <span class="comment">":SOURce1:FREQ?\n"</span>);  <span class="comment">// Отправка SCPI-команды запроса</span>
+    viScanf(vi, <span class="comment">"%t"</span>, rgcBuf);         <span class="comment">// Чтение ответа</span>
+    sscanf(rgcBuf, <span class="comment">"%lf"</span>, &amp;dFreq);     <span class="comment">// Парсинг числового значения</span>
+
+    <span class="comment">// 5. Отображение результата</span>
+    sprintf(rgcBuf, <span class="comment">"Частота канала A: %lg Гц"</span>, dFreq);
+    ShowMsg(rgcBuf);
+
+    <span class="comment">// 6. Завершение работы и закрытие соединений</span>
+    viClose(vi);           <span class="comment">// Закрытие сессии прибора</span>
+    viClose(defaultRM);    <span class="comment">// Закрытие менеджера ресурсов</span>
+}</code></pre>
+    </div>
+
+    <h2>Как работает код</h2>
+
+    <div class="step">
+        <span class="step-number">Шаг 1:</span> <strong>Инициализация</strong>
+        <p>Код начинается с подключения необходимых заголовочных файлов и определения параметров подключения. Функция <code>ShowMsg()</code> обеспечивает кросс-платформенный вывод сообщений.</p>
+    </div>
+
+    <div class="step">
+        <span class="step-number">Шаг 2:</span> <strong>Настройка менеджера ресурсов VISA</strong>
+        <p><code>viOpenDefaultRM()</code> инициализирует менеджер ресурсов VISA, который управляет всеми последующими подключениями к приборам. Это основа для всех операций VISA.</p>
+    </div>
+
+    <div class="step">
+        <span class="step-number">Шаг 3:</span> <strong>Подключение к прибору</strong>
+        <p>Устанавливается TCP/IP соединение с прибором с помощью <code>viOpen()</code> с использованием строки подключения в формате <code>TCPIP::[IP]::[PORT]::SOCKET</code>.</p>
+    </div>
+
+    <div class="step">
+        <span class="step-number">Шаг 4:</span> <strong>Настройка параметров связи</strong>
+        <p>Устанавливаются три важных атрибута:</p>
+        <ul>
+            <li><code>VI_ATTR_TERMCHAR_EN</code> - Включает символ-терминатор</li>
+            <li><code>VI_ATTR_TMO_VALUE</code> - Устанавливает таймаут 5 секунд</li>
+            <li><code>VI_ATTR_TERMCHAR</code> - Настраивает перевод строки как терминатор</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <span class="step-number">Шаг 5:</span> <strong>SCPI-коммуникация</strong>
+        <p>Код отправляет SCPI-команду (<code>:SOURce1:FREQ?</code>) для запроса частоты, читает ответ и преобразует его в числовое значение.</p>
+    </div>
+
+    <div class="step">
+        <span class="step-number">Шаг 6:</span> <strong>Завершение работы</strong>
+        <p>Код корректно закрывает сначала сессию прибора, затем сессию менеджера ресурсов для освобождения ресурсов.</p>
+    </div>
+
+    <h2>Ключевые особенности</h2>
+    <ul>
+        <li><strong>Стандартный протокол SCPI:</strong> Используется синтаксис команд <code>:SOURce1:FREQ?</code></li>
+        <li><strong>TCP/IP соединение:</strong> VISA абстрагирует низкоуровневое сетевое взаимодействие</li>
+        <li><strong>Безопасность соединения:</strong>
+            <ul>
+                <li>Проверка статуса после каждой операции</li>
+                <li>Гарантированное освобождение ресурсов</li>
+            </ul>
+        </li>
+    </ul>
+
+    <div class="warning">
+        <h3>Типичные проблемы и решения</h3>
+        <ul>
+            <li><strong>Нет соединения:</strong> Проверьте IP-адрес и доступность прибора в сети</li>
+            <li><strong>Таймауты:</strong> Увеличьте значение <code>VI_ATTR_TMO_VALUE</code></li>
+            <li><strong>Неверные команды:</strong> Убедитесь, что прибор поддерживает отправляемые SCPI-команды</li>
+        </ul>
+    </div>
+
+    <div class="note">
+        <h3>Требования для успешной работы</h3>
+        <ol>
+            <li>Установите среду VISA (NI-VISA или Keysight VISA)</li>
+            <li>Настройте правильный IP-адрес прибора</li>
+            <li>Убедитесь, что прибор поддерживает SCPI-команды</li>
+            <li>Разрешите соединение в брандмауэре</li>
+            <li>Проверьте физическое подключение прибора к сети</li>
+        </ol>
+    </div>
+
+    <p>Данный код представляет собой шаблон для управления любыми VISA-совместимыми приборами по сети.</p>
+</body>
+</html>
