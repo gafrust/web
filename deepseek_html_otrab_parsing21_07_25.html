@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проект Visual Studio для изучения JSON парсинга в стиле ADRV9026</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 24px;
+        }
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+        }
+        pre {
+            background-color: #f8f8f8;
+            padding: 16px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border-left: 4px solid #3498db;
+        }
+        .cpp {
+            background-color: #f0f0f0;
+            padding: 16px;
+            border-radius: 5px;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+            white-space: pre;
+        }
+        .note {
+            background-color: #e7f5fe;
+            padding: 12px;
+            border-left: 4px solid #3498db;
+            margin: 16px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Проект Visual Studio для изучения JSON парсинга в стиле ADRV9026</h1>
+    
+    <p>Создадим проект для отработки парсинга JSON аналогичного тому, что используется в коде ADRV9026, с возможностью отладки.</p>
+    
+    <h2>Шаг 1: Создание проекта в Visual Studio</h2>
+    
+    <ol>
+        <li>Откройте Visual Studio</li>
+        <li>Создайте новый проект: <code>File → New → Project</code></li>
+        <li>Выберите <code>Console App (C++)</code></li>
+        <li>Назовите проект <code>JsonParserTraining</code></li>
+        <li>Нажмите <code>Create</code></li>
+    </ol>
+    
+    <h2>Шаг 2: Замените код в main.cpp</h2>
+    
+    <div class="cpp">#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;cstring&gt; // для strnstr (если используется Windows)
+
+// Эмуляция strnstr для Windows
+const char* strnstr(const char* haystack, const char* needle, size_t len) {
+    if (!haystack || !needle) return nullptr;
+    
+    size_t needle_len = strlen(needle);
+    if (needle_len == 0) return haystack;
+    
+    for (size_t i = 0; i &lt; len &amp;&amp; haystack[i] != '\0'; i++) {
+        if (i + needle_len &gt; len) return nullptr;
+        
+        if (strncmp(&amp;haystack[i], needle, needle_len) == 0) {
+            return &amp;haystack[i];
+        }
+    }
+    return nullptr;
+}
+
+// Структура для хранения параметров (аналогично коду ADRV9026)
+struct AdrvConfig {
+    unsigned int atten;
+    unsigned int channelsMask;
+    bool parseSuccess;
+};
+
+// Функция парсинга JSON в стиле ADRV9026
+AdrvConfig parseAdrvJson(const char* jsonData, size_t dataLength) {
+    AdrvConfig config = {0, 0, false};
+    int success = 0;
+    
+    // Парсинг Atten
+    const char* ptr = strnstr(jsonData, "\"Atten\":", dataLength);
+    if (ptr) {
+        success = sscanf(ptr + 8, "%u", &amp;config.atten);
+    }
+    
+    // Парсинг ChannelsMask
+    if (success) {
+        ptr = strnstr(jsonData, "\"ChannelsMask\":", dataLength);
+        if (ptr) {
+            success = sscanf(ptr + 15, "%u", &amp;config.channelsMask);
+        }
+    }
+    
+    config.parseSuccess = (success == 1);
+    return config;
+}
+
+void testParser(const char* testJson, size_t length) {
+    std::cout &lt;&lt; "Testing JSON: " &lt;&lt; testJson &lt;&lt; "\n";
+    
+    AdrvConfig config = parseAdrvJson(testJson, length);
+    
+    if (config.parseSuccess) {
+        std::cout &lt;&lt; "Parse successful:\n";
+        std::cout &lt;&lt; "  Atten: " &lt;&lt; config.atten &lt;&lt; "\n";
+        std::cout &lt;&lt; "  ChannelsMask: 0x" &lt;&lt; std::hex &lt;&lt; config.channelsMask &lt;&lt; std::dec &lt;&lt; "\n";
+    } else {
+        std::cout &lt;&lt; "Parse failed!\n";
+    }
+    
+    std::cout &lt;&lt; "--------------------------------\n";
+}
+
+int main() {
+    // Тестовые JSON строки
+    const char* validJson = "{\"Atten\":10,\"ChannelsMask\":3}";
+    const char* validWithSpaces = "{ \"Atten\" : 20, \"ChannelsMask\" : 5 }";
+    const char* invalidJson = "{\"Atten\":30,\"UnknownField\":7}";
+    const char* malformedJson = "{\"Atten\":40,\"ChannelsMask\":}";
+    
+    // Запуск тестов
+    testParser(validJson, strlen(validJson));
+    testParser(validWithSpaces, strlen(validWithSpaces));
+    testParser(invalidJson, strlen(invalidJson));
+    testParser(malformedJson, strlen(malformedJson));
+    
+    // Для отладки - сделаем паузу в Release
+#ifdef NDEBUG
+    system("pause");
+#endif
+    
+    return 0;
+}</div>
+    
+    <h2>Шаг 3: Настройка отладки</h2>
+    
+    <ol>
+        <li>Установите точку останова (breakpoint) на строке <code>AdrvConfig config = parseAdrvJson(testJson, length);</code></li>
+        <li>Нажмите <code>F5</code> для запуска в режиме отладки</li>
+        <li>Используйте <code>F10 (Step Over)</code> и <code>F11 (Step Into)</code> для пошагового выполнения</li>
+        <li>Наводите курсор на переменные для просмотра их значений</li>
+    </ol>
+    
+    <h2>Шаг 4: Анализ кода</h2>
+    
+    <p>Ключевые элементы для изучения:</p>
+    
+    <ul>
+        <li><strong>Эмуляция strnstr</strong>:
+            <ul>
+                <li>В Windows нет встроенной strnstr, поэтому мы её реализовали</li>
+                <li>Это точная копия функции, используемой в оригинальном коде</li>
+            </ul>
+        </li>
+        <li><strong>Структура AdrvConfig</strong>:
+            <ul>
+                <li>Аналог структур из оригинального кода</li>
+                <li>Хранит параметры аттенюации и маски каналов</li>
+            </ul>
+        </li>
+        <li><strong>Функция parseAdrvJson</strong>:
+            <ul>
+                <li>Точное воспроизведение логики парсинга из ADRV9026</li>
+                <li>Использует strnstr для поиска ключей</li>
+                <li>sscanf для извлечения значений</li>
+            </ul>
+        </li>
+        <li><strong>Тестовые случаи</strong>:
+            <ul>
+                <li>Валидный JSON</li>
+                <li>JSON с пробелами</li>
+                <li>JSON с неизвестным полем</li>
+                <li>Некорректный JSON</li>
+            </ul>
+        </li>
+    </ul>
+    
+    <h2>Шаг 5: Модификации для экспериментов</h2>
+    
+    <p>Попробуйте изменить код для:</p>
+    
+    <ul>
+        <li>Обработки JSON с разным порядком полей</li>
+        <li>Добавления проверки на пробелы после ключей</li>
+        <li>Реализации более надёжного парсера с обработкой ошибок</li>
+        <li>Добавления поддержки чисел с плавающей точкой для Atten</li>
+    </ul>
+    
+    <h2>Выводы</h2>
+    
+    <p>Этот проект позволяет:</p>
+    
+    <ul>
+        <li>Увидеть как работает парсинг JSON из кода ADRV9026</li>
+        <li>Пошагово изучить его в отладчике</li>
+        <li>Экспериментировать с разными форматами JSON</li>
+        <li>Понимать ограничения такого подхода к парсингу</li>
+    </ul>
+    
+    <div class="note">
+        Для более сложных сценариев рекомендуется использовать специализированные библиотеки парсинга JSON, но этот пример точно соответствует логике оригинального кода ADRV9026.
+    </div>
+</body>
+</html>
