@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VISA Network Instrument Control</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            border-radius: 0 4px 4px 0;
+        }
+        .note {
+            background-color: #e7f5fe;
+            border-left: 4px solid #2980b9;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .step {
+            background-color: #e8f8f5;
+            border-left: 4px solid #2ecc71;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .step-number {
+            font-weight: bold;
+            color: #27ae60;
+        }
+        .keyword {
+            color: #c7254e;
+            font-weight: bold;
+        }
+        .comment {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>VISA Network Instrument Control Implementation</h1>
+    <p>This example demonstrates how to control a signal generator over TCP/IP using VISA (Virtual Instrument Software Architecture) API in C++.</p>
+
+    <div class="note">
+        <strong>Note:</strong> This code requires VISA runtime (NI-VISA or Keysight VISA) installed and proper network configuration of the target instrument.
+    </div>
+
+    <h2>Complete Source Code</h2>
+    <div class="code-block">
+<pre><code>/**************************************************************
+Network remote control implementation using VISA library in C++
+This example demonstrates how to control a signal generator over TCP/IP
+using VISA (Virtual Instrument Software Architecture) API.
+**************************************************************/
+
+<span class="keyword">#include</span> <span class="comment">"stdafx.h"</span>       <span class="comment">// Precompiled header for MSVC</span>
+<span class="keyword">#include</span> &lt;visa.h&gt;         <span class="comment">// Main VISA library header</span>
+<span class="keyword">#include</span> &lt;stdio.h&gt;        <span class="comment">// Standard I/O functions</span>
+<span class="keyword">#include</span> &lt;stdlib.h&gt;       <span class="comment">// Standard library functions</span>
+
+<span class="comment">// Device connection parameters</span>
+<span class="keyword">#define</span> SOURCE_IP_ADDR_A <span class="comment">"192.168.1.199"</span>  <span class="comment">// IP address of signal generator</span>
+<span class="keyword">#define</span> SOURCE_SOCKET_PORT 5025           <span class="comment">// TCP port of signal generator</span>
+
+<span class="comment">// Helper function to display messages</span>
+<span class="keyword">void</span> ShowMsg(PCHAR lpszText) {
+<span class="keyword">#ifdef</span> _UNICODE
+    AfxMessageBox((CString)lpszText);  <span class="comment">// Unicode version</span>
+<span class="keyword">#else</span>
+    AfxMessageBox(lpszText);           <span class="comment">// ANSI version</span>
+<span class="keyword">#endif</span>
+}
+
+<span class="comment">// Main instrument control function</span>
+<span class="keyword">void</span> SocketTest1(<span class="keyword">void</span>) {
+    ViSession defaultRM;    <span class="comment">// Default resource manager session</span>
+    ViSession vi;           <span class="comment">// Instrument session handle</span>
+    ViStatus iStatus = 0;   <span class="comment">// Status code</span>
+    ViChar rgcSocket[VI_FIND_BUFLEN];  <span class="comment">// Buffer for device identification</span>
+    ViChar rgcBuf[256];     <span class="comment">// General purpose buffer</span>
+    <span class="keyword">double</span> dFreq = 0.0;     <span class="comment">// Frequency value storage</span>
+
+    <span class="comment">// 1. Initialize VISA resource manager</span>
+    iStatus = viOpenDefaultRM(&amp;defaultRM);
+    <span class="keyword">if</span> (iStatus &lt; VI_SUCCESS) {
+        ShowMsg(<span class="comment">"Could not open VISA resource manager!"</span>);
+        <span class="keyword">return</span>;
+    }
+
+    <span class="comment">// 2. Establish connection to the instrument</span>
+    sprintf(rgcSocket, <span class="comment">"TCPIP::%s::%d::SOCKET"</span>, SOURCE_IP_ADDR_A, SOURCE_SOCKET_PORT);
+    iStatus = viOpen(defaultRM, rgcSocket, VI_NULL, VI_NULL, &amp;vi);
+    <span class="keyword">if</span> (iStatus &lt; VI_SUCCESS) {
+        ShowMsg(<span class="comment">"Could not connect to instrument!"</span>);
+        viClose(defaultRM);
+        <span class="keyword">return</span>;
+    }
+
+    <span class="comment">// 3. Configure communication parameters</span>
+    viSetAttribute(vi, VI_ATTR_TERMCHAR_EN, VI_TRUE);  <span class="comment">// Enable terminator</span>
+    viSetAttribute(vi, VI_ATTR_TMO_VALUE, 5000);       <span class="comment">// 5 second timeout</span>
+    viSetAttribute(vi, VI_ATTR_TERMCHAR, '\n');        <span class="comment">// Set terminator to newline</span>
+
+    <span class="comment">// 4. Query instrument for current frequency</span>
+    viPrintf(vi, <span class="comment">":SOURce1:FREQ?\n"</span>);  <span class="comment">// Send SCPI query command</span>
+    viScanf(vi, <span class="comment">"%t"</span>, rgcBuf);         <span class="comment">// Read response</span>
+    sscanf(rgcBuf, <span class="comment">"%lf"</span>, &amp;dFreq);     <span class="comment">// Parse numerical value</span>
+
+    <span class="comment">// 5. Display the result</span>
+    sprintf(rgcBuf, <span class="comment">"Freq of Channel A is: %lg Hz"</span>, dFreq);
+    ShowMsg(rgcBuf);
+
+    <span class="comment">// 6. Cleanup and close connections</span>
+    viClose(vi);           <span class="comment">// Close instrument session</span>
+    viClose(defaultRM);    <span class="comment">// Close resource manager</span>
+}</code></pre>
+    </div>
+
+    <h2>How the Code Works</h2>
+
+    <div class="step">
+        <span class="step-number">Step 1:</span> <strong>Initialization</strong>
+        <p>The code begins by including necessary headers and defining connection parameters. The <code>ShowMsg()</code> function provides cross-platform message display capability.</p>
+    </div>
+
+    <div class="step">
+        <span class="step-number">Step 2:</span> <strong>VISA Resource Manager Setup</strong>
+        <p><code>viOpenDefaultRM()</code> initializes the VISA resource manager which manages all subsequent instrument connections. This is the foundation for all VISA operations.</p>
+    </div>
+
+    <div class="step">
+        <span class="step-number">Step 3:</span> <strong>Instrument Connection</strong>
+        <p>The code establishes a TCP/IP connection to the instrument using <code>viOpen()</code> with a connection string formatted as <code>TCPIP::[IP]::[PORT]::SOCKET</code>.</p>
+    </div>
+
+    <div class="step">
+        <span class="step-number">Step 4:</span> <strong>Communication Configuration</strong>
+        <p>Three critical attributes are set:</p>
+        <ul>
+            <li><code>VI_ATTR_TERMCHAR_EN</code> - Enables message termination</li>
+            <li><code>VI_ATTR_TMO_VALUE</code> - Sets 5 second timeout</li>
+            <li><code>VI_ATTR_TERMCHAR</code> - Configures newline as terminator</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <span class="step-number">Step 5:</span> <strong>SCPI Communication</strong>
+        <p>The code sends a SCPI command (<code>:SOURce1:FREQ?</code>) to query the frequency, reads the response, and parses it into a numerical value.</p>
+    </div>
+
+    <div class="step">
+        <span class="step-number">Step 6:</span> <strong>Cleanup</strong>
+        <p>The code properly closes both the instrument session and resource manager session to free resources.</p>
+    </div>
+
+    <h2>Key Features</h2>
+    <ul>
+        <li><strong>Standard SCPI Protocol:</strong> Uses <code>:SOURce1:FREQ?</code> command syntax</li>
+        <li><strong>TCP/IP Connection:</strong> VISA abstracts low-level network communication</li>
+        <li><strong>Connection Safety:</strong>
+            <ul>
+                <li>Status checking after each operation</li>
+                <li>Guaranteed resource cleanup</li>
+            </ul>
+        </li>
+    </ul>
+
+    <div class="note">
+        <h3>Requirements for Successful Operation</h3>
+        <ol>
+            <li>Install VISA Runtime (NI-VISA or Keysight VISA)</li>
+            <li>Configure correct instrument IP address</li>
+            <li>Verify instrument supports SCPI commands</li>
+            <li>Ensure firewall allows the connection</li>
+        </ol>
+    </div>
+
+    <p>This code serves as a template for controlling any VISA-compatible equipment over network connections.</p>
+</body>
+</html>
