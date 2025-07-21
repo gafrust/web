@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Парсинг JSON как в ADRV9026</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .code-block {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+        }
+        .test-case {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            color: #27ae60;
+        }
+        .error {
+            color: #e74c3c;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 10px;
+            padding: 8px;
+            font-family: 'Courier New', monospace;
+        }
+        #customJsonResult {
+            min-height: 50px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Анализ парсинга JSON как в ADRV9026</h1>
+    
+    <p>Эта страница демонстрирует, как работает парсинг JSON в коде ADRV9026, который вы изучали.</p>
+    
+    <h2>Как работает парсер</h2>
+    
+    <p>В embedded-системах (как ADRV9026) часто используют упрощённый парсинг JSON без полноценных библиотек:</p>
+    
+    <div class="code-block">
+// Парсинг Atten
+const char* ptr = strnstr(jsonData, "\"Atten\":", dataLength);
+if (ptr) {
+    success = sscanf(ptr + 8, "%u", &config.atten);
+}
+
+// Парсинг ChannelsMask
+if (success) {
+    ptr = strnstr(jsonData, "\"ChannelsMask\":", dataLength);
+    if (ptr) {
+        success = sscanf(ptr + 15, "%u", &config.channelsMask);
+    }
+}
+    </div>
+    
+    <p>Особенности этого подхода:</p>
+    <ul>
+        <li>Ищет конкретные ключи в сырых данных</li>
+        <li>Использует фиксированные смещения (8 и 15 символов)</li>
+        <li>Не проверяет валидность всего JSON</li>
+        <li>Работает только с конкретным форматом</li>
+    </ul>
+    
+    <h2>Тестовые примеры</h2>
+    
+    <div class="test-case">
+        <h3>Пример 1: Корректный JSON</h3>
+        <div class="code-block">{"Atten":10,"ChannelsMask":3}</div>
+        <button onclick="testJson('{"Atten":10,"ChannelsMask":3}')">Протестировать</button>
+        <div id="testResult1"></div>
+    </div>
+    
+    <div class="test-case">
+        <h3>Пример 2: JSON с пробелами</h3>
+        <div class="code-block">{ "Atten" : 20, "ChannelsMask" : 5 }</div>
+        <button onclick="testJson('{ "Atten" : 20, "ChannelsMask" : 5 }')">Протестировать</button>
+        <div id="testResult2"></div>
+    </div>
+    
+    <div class="test-case">
+        <h3>Пример 3: JSON с неизвестным полем</h3>
+        <div class="code-block">{"Atten":30,"UnknownField":7}</div>
+        <button onclick="testJson('{"Atten":30,"UnknownField":7}')">Протестировать</button>
+        <div id="testResult3"></div>
+    </div>
+    
+    <div class="test-case">
+        <h3>Пример 4: Некорректный JSON</h3>
+        <div class="code-block">{"Atten":40,"ChannelsMask":}</div>
+        <button onclick="testJson('{"Atten":40,"ChannelsMask":}')">Протестировать</button>
+        <div id="testResult4"></div>
+    </div>
+    
+    <h2>Попробуйте свой JSON</h2>
+    
+    <textarea id="customJson" placeholder='Введите JSON для тестирования, например: {"Atten":15,"ChannelsMask":1}'></textarea>
+    <button onclick="testCustomJson()">Протестировать</button>
+    <div id="customJsonResult"></div>
+    
+    <script>
+        function parseAdrvJson(jsonData) {
+            try {
+                // Эмуляция парсинга как в ADRV9026
+                let atten = null;
+                let channelsMask = null;
+                let parseSuccess = false;
+                
+                // Парсинг Atten
+                const attenIndex = jsonData.indexOf('"Atten":');
+                if (attenIndex !== -1) {
+                    const attenStr = jsonData.slice(attenIndex + 8);
+                    const attenMatch = attenStr.match(/^\s*(\d+)/);
+                    if (attenMatch) {
+                        atten = parseInt(attenMatch[1]);
+                        parseSuccess = true;
+                    }
+                }
+                
+                // Парсинг ChannelsMask
+                if (parseSuccess) {
+                    const maskIndex = jsonData.indexOf('"ChannelsMask":');
+                    if (maskIndex !== -1) {
+                        const maskStr = jsonData.slice(maskIndex + 15);
+                        const maskMatch = maskStr.match(/^\s*(\d+)/);
+                        if (maskMatch) {
+                            channelsMask = parseInt(maskMatch[1]);
+                        } else {
+                            parseSuccess = false;
+                        }
+                    } else {
+                        parseSuccess = false;
+                    }
+                }
+                
+                return {
+                    atten: atten,
+                    channelsMask: channelsMask,
+                    parseSuccess: parseSuccess
+                };
+            } catch (e) {
+                return {
+                    atten: null,
+                    channelsMask: null,
+                    parseSuccess: false,
+                    error: e.message
+                };
+            }
+        }
+        
+        function testJson(jsonStr) {
+            const result = parseAdrvJson(jsonStr);
+            displayResult(jsonStr, result);
+        }
+        
+        function testCustomJson() {
+            const jsonStr = document.getElementById('customJson').value;
+            const result = parseAdrvJson(jsonStr);
+            displayResult(jsonStr, result, 'customJsonResult');
+        }
+        
+        function displayResult(jsonStr, result, elementId = null) {
+            let output = `<strong>Тестируемый JSON:</strong> ${escapeHtml(jsonStr)}<br>`;
+            
+            if (result.parseSuccess) {
+                output += `<span class="success">Парсинг успешен!</span><br>`;
+                output += `<strong>Atten:</strong> ${result.atten}<br>`;
+                output += `<strong>ChannelsMask:</strong> 0x${result.channelsMask.toString(16)}`;
+            } else {
+                output += `<span class="error">Ошибка парсинга!</span><br>`;
+                if (result.error) {
+                    output += `<strong>Ошибка:</strong> ${escapeHtml(result.error)}`;
+                } else {
+                    output += `Не удалось найти или распарсить требуемые поля.`;
+                }
+            }
+            
+            if (elementId) {
+                document.getElementById(elementId).innerHTML = output;
+            } else {
+                // Определяем какой тестовый пример
+                if (jsonStr.includes('UnknownField')) {
+                    document.getElementById('testResult3').innerHTML = output;
+                } else if (jsonStr.includes('"Atten" : 20')) {
+                    document.getElementById('testResult2').innerHTML = output;
+                } else if (jsonStr.includes('ChannelsMask":}')) {
+                    document.getElementById('testResult4').innerHTML = output;
+                } else {
+                    document.getElementById('testResult1').innerHTML = output;
+                }
+            }
+        }
+        
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
