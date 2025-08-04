@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Документация по Xilinx PCIe DMA</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        header {
+            background-color: #0b3d91;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 2.2em;
+        }
+        
+        h2 {
+            color: #0b3d91;
+            border-bottom: 2px solid #0b3d91;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        
+        h3 {
+            color: #1a5fb4;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .code-block {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-left: 4px solid #0b3d91;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #0b3d91;
+            color: white;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        .faq {
+            background-color: #e7f1ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .faq-question {
+            font-weight: bold;
+            color: #1a5fb4;
+        }
+        
+        .note {
+            background-color: #fff8e1;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 15px 0;
+        }
+        
+        .mode-card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            background-color: #f9f9f9;
+        }
+        
+        .mode-title {
+            font-weight: bold;
+            color: #0b3d91;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Документация по Xilinx PCIe DMA</h1>
+        <p>Драйвер и тестовое ПО для Xilinx PCIe DMA IP</p>
+    </header>
+    
+    <div class="container">
+        <section id="overview">
+            <h2>Обзор</h2>
+            <p>Этот программный пакет предоставляет:</p>
+            <ul>
+                <li><strong>Драйвер для ядра Linux</strong> (<code>xdma/</code>) для работы с Xilinx PCIe DMA IP</li>
+                <li><strong>Тестовые скрипты</strong> (<code>tests/</code>) для проверки работы DMA в двух режимах:
+                    <ul>
+                        <li><strong>Memory-Mapped (AXI-MM)</strong> - DMA с доступом к памяти хоста</li>
+                        <li><strong>Streaming (AXI-ST)</strong> - потоковый режим DMA</li>
+                    </ul>
+                </li>
+                <li><strong>Инструменты для измерения производительности</strong> (например, <code>perform_hwcount.sh</code>)</li>
+            </ul>
+        </section>
+        
+        <section id="requirements">
+            <h2>Системные требования</h2>
+            <h3>Поддерживаемые системы</h3>
+            <ul>
+                <li><strong>ОС:</strong> Linux (ядро 3.10-6.8), RHEL/CentOS 7-8, Ubuntu 16.04-24.04</li>
+                <li><strong>Архитектура:</strong> x86_64</li>
+                <li><strong>Аппаратное обеспечение:</strong> ПЛИС Xilinx UltraScale+, Virtex-7, 7 Series Gen2</li>
+            </ul>
+        </section>
+        
+        <section id="components">
+            <h2>Структура директорий</h2>
+            <table>
+                <tr>
+                    <th>Директория/Файл</th>
+                    <th>Описание</th>
+                </tr>
+                <tr>
+                    <td><code>xdma/</code></td>
+                    <td>Исходный код драйвера ядра Linux для PCIe DMA</td>
+                </tr>
+                <tr>
+                    <td><code>include/</code></td>
+                    <td>Заголовочные файлы, необходимые для компиляции драйвера</td>
+                </tr>
+                <tr>
+                    <td><code>tests/</code></td>
+                    <td>Тестовые скрипты и данные для проверки работы DMA</td>
+                </tr>
+                <tr>
+                    <td><code>load_driver.sh</code></td>
+                    <td>Загружает драйвер и создает файлы устройств (<code>/dev/xdma*</code>)</td>
+                </tr>
+                <tr>
+                    <td><code>run_test.sh</code></td>
+                    <td>Запускает базовые тесты DMA (вызывает скрипты для memory-mapped и streaming режимов)</td>
+                </tr>
+                <tr>
+                    <td><code>perform_hwcount.sh</code></td>
+                    <td>Измеряет пропускную способность DMA (H2C и C2H)</td>
+                </tr>
+                <tr>
+                    <td><code>scripts_mm/</code></td>
+                    <td>Расширенные тесты для AXI-MM (включая <code>fio</code> для нагрузочного тестирования)</td>
+                </tr>
+            </table>
+        </section>
+        
+        <section id="usage">
+            <h2>Инструкция по использованию</h2>
+            
+            <h3>1. Установка драйвера</h3>
+            <div class="code-block">cd xdma
+make install  # компиляция и установка модуля ядра
+cd ../tests
+./load_driver.sh  # загрузка драйвера и создание устройств /dev/xdma*</div>
+            
+            <div class="note">
+                После загрузки драйвера будут созданы следующие файлы устройств:
+                <ul>
+                    <li><code>/dev/xdma*</code> - для DMA-операций</li>
+                    <li><code>/dev/xdma/card*</code> - для управления несколькими платами FPGA</li>
+                </ul>
+            </div>
+            
+            <h3>2. Запуск тестов</h3>
+            <h4>Базовый тест</h4>
+            <div class="code-block">./run_test.sh  # тестирует оба режима DMA (AXI-MM и AXI-ST)</div>
+            
+            <h4>Расширенный тест (AXI-MM)</h4>
+            <div class="code-block">cd scripts_mm
+./xdma_mm.sh 0000:01:00.0 | tee /tmp/xdma_mm.log  # 0000:01:00.0 - адрес PCIe устройства</div>
+            
+            <h4>Тест производительности</h4>
+            <div class="code-block">./perform_hwcount.sh  # результаты сохраняются в hw_log_h2c.txt и hw_log_c2h.txt</div>
+        </section>
+        
+        <section id="dma-modes">
+            <h2>Режимы DMA</h2>
+            
+            <div class="mode-card">
+                <div class="mode-title">1. Memory-Mapped (AXI-MM)</div>
+                <ul>
+                    <li>Хост и FPGA используют общее адресное пространство</li>
+                    <li>Данные передаются блоками (с помощью <code>dma_from_device</code>/<code>dma_to_device</code>)</li>
+                    <li>Идеально подходит для задач с большими объемами данных (например, обработка видео)</li>
+                </ul>
+            </div>
+            
+            <div class="mode-card">
+                <div class="mode-title">2. Streaming (AXI-ST)</div>
+                <ul>
+                    <li>Передача данных в реальном времени без привязки к адресам</li>
+                    <li>Используется в высокоскоростных приложениях (например, обработка сетевых пакетов)</li>
+                </ul>
+            </div>
+        </section>
+        
+        <section id="faq">
+            <h2>Часто задаваемые вопросы</h2>
+            
+            <div class="faq">
+                <div class="faq-question">В: Как удалить драйвер?</div>
+                <div class="code-block">rmmod xdma  # выгружает модуль ядра</div>
+            </div>
+            
+            <div class="faq">
+                <div class="faq-question">В: Как изменить PCIe Device ID для драйвера?</div>
+                <p>Отредактируйте файл <code>xdma/xdma_mod.c</code> и перекомпилируйте драйвер.</p>
+            </div>
+            
+            <div class="faq">
+                <div class="faq-question">В: Как переключиться с прерываний (interrupt) на опрос (polling)?</div>
+                <p>В файле <code>load_driver.sh</code> замените:</p>
+                <div class="code-block">insmod xdma/xdma.ko</div>
+                <p>на:</p>
+                <div class="code-block">insmod xdma/xdma.ko poll_mode=1</div>
+            </div>
+        </section>
+        
+        <section id="conclusion">
+            <h2>Заключение</h2>
+            <p>Этот пакет позволяет:</p>
+            <ul>
+                <li>Управлять DMA-транзакциями между CPU и FPGA</li>
+                <li>Тестировать производительность PCIe</li>
+                <li>Интегрировать FPGA в Linux-системы для высокоскоростной обработки данных</li>
+            </ul>
+            <p>Для получения более подробной информации обратитесь к документации <strong>Xilinx PG195 (DMA/Bridge Subsystem for PCI Express)</strong>.</p>
+        </section>
+    </div>
+</body>
+</html>
