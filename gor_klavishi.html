@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 Горячие клавиши VS Code - Полный справочник</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: "⚡";
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 80px;
+            opacity: 0.1;
+            color: #764ba2;
+        }
+        
+        h1 {
+            color: #2d3436;
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            color: #636e72;
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+        }
+        
+        .platform-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .platform-btn {
+            padding: 12px 30px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .platform-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .platform-btn.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .keyboard-icon {
+            font-size: 1.2rem;
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .category-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease;
+        }
+        
+        .category-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .category-icon {
+            font-size: 2rem;
+            color: #667eea;
+        }
+        
+        .category-title {
+            color: #2d3436;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .shortcut-list {
+            list-style: none;
+        }
+        
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        
+        .shortcut-item:last-child {
+            border-bottom: none;
+        }
+        
+        .action-name {
+            color: #444;
+            font-size: 1rem;
+        }
+        
+        .key-combo {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        
+        .key {
+            background: linear-gradient(145deg, #f0f0f0, #ffffff);
+            border: 1px solid #ddd;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9rem;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-width: 30px;
+            text-align: center;
+        }
+        
+        .key-plus {
+            color: #999;
+            align-self: center;
+            padding: 0 3px;
+        }
+        
+        .quick-access {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .quick-access h2 {
+            color: #2d3436;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+            text-align: center;
+        }
+        
+        .quick-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .quick-card {
+            background: linear-gradient(135deg, #667eea15, #764ba215);
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .quick-title {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .quick-keys {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .key.primary {
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: white;
+            margin-top: 40px;
+        }
+        
+        .search-box {
+            margin: 20px 0 30px;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 15px 20px 15px 50px;
+            border: 2px solid #ddd;
+            border-radius: 50px;
+            font-size: 1rem;
+            background: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            font-size: 1.2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .platform-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .platform-btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ Горячие клавиши VS Code</h1>
+            <p class="subtitle">Полный справочник для Linux/Windows. Увеличьте скорость разработки в 3 раза!</p>
+            
+            <div class="platform-selector">
+                <button class="platform-btn active" data-platform="all">
+                    <span class="keyboard-icon">💻</span> Все платформы
+                </button>
+                <button class="platform-btn" data-platform="linux">
+                    <span class="keyboard-icon">🐧</span> Linux
+                </button>
+                <button class="platform-btn" data-platform="windows">
+                    <span class="keyboard-icon">🪟</span> Windows
+                </button>
+            </div>
+            
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="🔍 Поиск по действиям или клавишам...">
+                <div class="search-icon">🔍</div>
+            </div>
+        </header>
+        
+        <div class="quick-access">
+            <h2>🎯 Самые важные (выучить в первую очередь!)</h2>
+            <div class="quick-grid">
+                <div class="quick-card">
+                    <div class="quick-title">Быстрый поиск файлов</div>
+                    <div class="quick-keys">
+                        <div class="key primary">Ctrl</div>
+                        <div class="key primary">P</div>
+                    </div>
+                </div>
+                <div class="quick-card">
+                    <div class="quick-title">Палитра команд (все команды)</div>
+                    <div class="quick-keys">
+                        <div class="key primary">Ctrl</div>
+                        <div class="key primary">Shift</div>
+                        <div class="key primary">P</div>
+                    </div>
+                </div>
+                <div class="quick-card">
+                    <div class="quick-title">Показать/скрыть терминал</div>
+                    <div class="quick-keys">
+                        <div class="key primary">Ctrl</div>
+                        <div class="key">`</div>
+                    </div>
+                </div>
+                <div class="quick-card">
+                    <div class="quick-title">Перейти к определению функции</div>
+                    <div class="quick-keys">
+                        <div class="key primary">F12</div>
+                    </div>
+                </div>
+                <div class="quick-card">
+                    <div class="quick-title">Закомментировать/раскомментировать</div>
+                    <div class="quick-keys">
+                        <div class="key primary">Ctrl</div>
+                        <div class="key primary">/</div>
+                    </div>
+                </div>
+                <div class="quick-card">
+                    <div class="quick-title">Выбрать следующее совпадение</div>
+                    <div class="quick-keys">
+                        <div class="key primary">Ctrl</div>
+                        <div class="key primary">D</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content-grid">
+            <!-- Файлы и проекты -->
+            <div class="category-card" data-category="files">
+                <div class="category-header">
+                    <div class="category-icon">📁</div>
+                    <h3 class="category-title">Работа с файлами и проектами</h3>
+                </div>
+                <ul class="shortcut-list">
+                    <li class="shortcut-item">
+                        <span class="action-name">Новый файл</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">N</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Открыть файл</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">O</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Сохранить файл</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">S</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Сохранить как</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">S</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Быстрый переход к файлу</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">P</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Показать проводник</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">E</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Восстановить закрытый файл</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">T</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Редактирование кода -->
+            <div class="category-card" data-category="editing">
+                <div class="category-header">
+                    <div class="category-icon">✏️</div>
+                    <h3 class="category-title">Редактирование кода</h3>
+                </div>
+                <ul class="shortcut-list">
+                    <li class="shortcut-item">
+                        <span class="action-name">Копировать</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">C</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Вырезать</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">X</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Вставить</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">V</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Отменить</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Z</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Повторить</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Z</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Переместить строку вверх/вниз</span>
+                        <div class="key-combo">
+                            <div class="key">Alt</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">↑/↓</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Копировать строку</span>
+                        <div class="key-combo">
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Alt</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">↑/↓</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Закомментировать/раскомментировать</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">/</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Выбрать следующее совпадение</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">D</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Навигация -->
+            <div class="category-card" data-category="navigation">
+                <div class="category-header">
+                    <div class="category-icon">🧭</div>
+                    <h3 class="category-title">Навигация</h3>
+                </div>
+                <ul class="shortcut-list">
+                    <li class="shortcut-item">
+                        <span class="action-name">Перейти к строке</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">G</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Перейти к определению</span>
+                        <div class="key-combo">
+                            <div class="key">F12</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Показать определение (peek)</span>
+                        <div class="key-combo">
+                            <div class="key">Alt</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">F12</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Перейти к символу в файле</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">O</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Следующая ошибка/предупреждение</span>
+                        <div class="key-combo">
+                            <div class="key">F8</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Показать/скрыть боковую панель</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">B</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Расширения</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">X</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Окна и вкладки -->
+            <div class="category-card" data-category="windows">
+                <div class="category-header">
+                    <div class="category-icon">🪟</div>
+                    <h3 class="category-title">Работа с окнами и вкладками</h3>
+                </div>
+                <ul class="shortcut-list">
+                    <li class="shortcut-item">
+                        <span class="action-name">Разделить редактор</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">\</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Перейти к группе редакторов (1/2/3)</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">1/2/3</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Переместить редактор</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">K</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">←/→</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Показать палитру команд</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">P</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Показать/скрыть терминал</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">`</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Отладка -->
+            <div class="category-card" data-category="debug">
+                <div class="category-header">
+                    <div class="category-icon">🐛</div>
+                    <h3 class="category-title">Отладка</h3>
+                </div>
+                <ul class="shortcut-list">
+                    <li class="shortcut-item">
+                        <span class="action-name">Начать/продолжить отладку</span>
+                        <div class="key-combo">
+                            <div class="key">F5</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Остановить отладку</span>
+                        <div class="key-combo">
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">F5</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Установить/убрать точку останова</span>
+                        <div class="key-combo">
+                            <div class="key">F9</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Шаг с обходом (step over)</span>
+                        <div class="key-combo">
+                            <div class="key">F10</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Шаг с заходом (step into)</span>
+                        <div class="key-combo">
+                            <div class="key">F11</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Шаг с выходом (step out)</span>
+                        <div class="key-combo">
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">F11</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Поиск и замена -->
+            <div class="category-card" data-category="search">
+                <div class="category-header">
+                    <div class="category-icon">🔍</div>
+                    <h3 class="category-title">Поиск и замена</h3>
+                </div>
+                <ul class="shortcut-list">
+                    <li class="shortcut-item">
+                        <span class="action-name">Поиск в файле</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">F</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Замена в файле</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">H</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Поиск по всему проекту</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">F</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Замена по всему проекту</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">H</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Следующий результат поиска</span>
+                        <div class="key-combo">
+                            <div class="key">F3</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Предыдущий результат поиска</span>
+                        <div class="key-combo">
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">F3</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Мультикурсор -->
+            <div class="category-card" data-category="multicursor">
+                <div class="category-header">
+                    <div class="category-icon">🎯</div>
+                    <h3 class="category-title">Мультикурсор</h3>
+                </div>
+                <ul class="shortcut-list">
+                    <li class="shortcut-item">
+                        <span class="action-name">Добавить курсор (клик)</span>
+                        <div class="key-combo">
+                            <div class="key">Alt</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Click</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Добавить курсор выше/ниже</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Alt</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">↑/↓</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Выделить все вхождения</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">L</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Добавить курсор в конец строк</span>
+                        <div class="key-combo">
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Alt</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">I</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Терминал -->
+            <div class="category-card" data-category="terminal">
+                <div class="category-header">
+                    <div class="category-icon">💻</div>
+                    <h3 class="category-title">Терминал</h3>
+                </div>
+                <ul class="shortcut-list">
+                    <li class="shortcut-item">
+                        <span class="action-name">Показать/скрыть терминал</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">`</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Создать новый терминал</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">`</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Разделить терминал</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">5</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Прокрутка терминала</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">↑/↓</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Копировать выделенный текст</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">C</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Для C/C++ -->
+            <div class="category-card" data-category="cpp">
+                <div class="category-header">
+                    <div class="category-icon">🔧</div>
+                    <h3 class="category-title">Для C/C++ (с расширением)</h3>
+                </div>
+                <ul class="shortcut-list">
+                    <li class="shortcut-item">
+                        <span class="action-name">Скомпилировать текущий файл</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">F7</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Собрать проект</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">B</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Перейти к определению функции</span>
+                        <div class="key-combo">
+                            <div class="key">F12</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Показать все ссылки</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">Shift</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">U</div>
+                        </div>
+                    </li>
+                    <li class="shortcut-item">
+                        <span class="action-name">Форматировать файл</span>
+                        <div class="key-combo">
+                            <div class="key">Ctrl</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">K</div>
+                            <div class="key-plus">+</div>
+                            <div class="key">F</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <footer>
+            <p>💡 Запомните хотя бы 10-15 самых часто используемых сочетаний — это ускорит вашу работу в разы!</p>
+            <p>Создано с ❤️ для разработчиков | VS Code Hotkeys Reference</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Поиск по горячим клавишам
+        document.querySelector('.search-input').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const shortcuts = document.querySelectorAll('.shortcut-item');
+            
+            shortcuts.forEach(shortcut => {
+                const action = shortcut.querySelector('.action-name').textContent.toLowerCase();
+                const keys = shortcut.querySelector('.key-combo').textContent.toLowerCase();
+                
+                if (action.includes(searchTerm) || keys.includes(searchTerm)) {
+                    shortcut.style.display = 'flex';
+                } else {
+                    shortcut.style.display = 'none';
+                }
+            });
+            
+            // Показываем/скрываем карточки категорий
+            document.querySelectorAll('.category-card').forEach(card => {
+                const visibleShortcuts = card.querySelectorAll('.shortcut-item[style="display: flex;"]').length +
+                                         card.querySelectorAll('.shortcut-item:not([style])').length;
+                
+                if (visibleShortcuts > 0 || searchTerm === '') {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+        
+        // Платформенные фильтры
+        document.querySelectorAll('.platform-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.platform-btn').forEach
