@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Документация по драйверу uartlite в Vitis</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #16a085;
+            margin-top: 20px;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        ul {
+            background: #ecf0f1;
+            padding: 15px 20px;
+            border-radius: 8px;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+        code {
+            background: #e0e0e0;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: Consolas, monospace;
+        }
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: #7f8c8d;
+            border-top: 1px solid #bdc3c7;
+            padding-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Документация по драйверу <code>uartlite</code> в Vitis (бывший SDK)</h1>
+    <p>Отличный и самый правильный вопрос! Работа с любой периферией начинается с изучения документации. Для драйвера <code>uartlite</code> в Vitis есть два основных источника информации.</p>
+
+    <h2>1. Официальная документация (онлайн)</h2>
+    <p>Самый актуальный и полный источник — это официальная документация AMD (Xilinx), размещённая на GitHub Pages:</p>
+    <ul>
+        <li>
+            <strong>Обзор драйвера (XUartLite)</strong><br>
+            Ссылка: <a href="https://xilinx.github.io/embeddedsw.github.io/uartlite/doc/html/api/index.html" target="_blank">https://xilinx.github.io/embeddedsw.github.io/uartlite/doc/html/api/index.html</a><br>
+            Что там есть: Подробное описание драйвера, его возможностей, режимов работы (опрос, прерывания), инициализации и важные примечания (например, что скорость UART задаётся только аппаратно, а FIFO имеет фиксированный размер в 16 байт).
+        </li>
+        <li>
+            <strong>Документация по API (Справочник функций)</strong><br>
+            Ссылка: <a href="https://xilinx.github.io/embeddedsw.github.io/uartlite/doc/html/api/xuartlite_8h.html" target="_blank">https://xilinx.github.io/embeddedsw.github.io/uartlite/doc/html/api/xuartlite_8h.html</a><br>
+            Что там есть: Это самое главное. Здесь вы найдете алфавитный список и подробное описание <strong>всех функций</strong> драйвера <code>xuartlite</code>. Для каждой функции указано её назначение, параметры и возвращаемое значение. Это настольная книга при работе с этим драйвером.
+        </li>
+    </ul>
+
+    <h2>2. Разница между функциями (по документации)</h2>
+    <p>Изучив документацию, вы увидите четкое разделение:</p>
+
+    <h3>Высокоуровневый API (<code>xuartlite.h</code>)</h3>
+    <ul>
+        <li><strong>Функции:</strong> <code>XUartLite_Initialize()</code>, <code>XUartLite_Send()</code>, <code>XUartLite_Recv()</code>, <code>XUartLite_IsSending()</code>.</li>
+        <li><strong>Как работают:</strong> Эти функции работают с экземпляром структуры <code>XUartLite</code>. Они «умные» — сами управляют FIFO, проверяют его состояние, ждут, когда можно отправить следующий байт и т.д. Функция <code>XUartLite_Send()</code> неблокирующая, но она всегда знает, сколько байт реально было отправлено в FIFO [1]. Для ожидания окончания отправки всех данных используется функция <code>XUartLite_IsSending()</code>, которая возвращает <code>TRUE</code>, пока передатчик занят [2]. <strong>Именно эту связку рекомендуется использовать в вашем проекте.</strong></li>
+    </ul>
+
+    <h3>Низкоуровневый API (регистровый уровень, <code>xuartlite_l.h</code>)</h3>
+    <ul>
+        <li><strong>Функции:</strong> <code>XUartLite_SendByte()</code>, <code>XUartLite_RecvByte()</code>, <code>XUartLite_IsTransmitFull()</code>, <code>XUartLite_IsReceiveEmpty()</code>.</li>
+        <li><strong>Как работают:</strong> Это, по сути, удобные макросы для прямой записи и чтения регистров UART по базовому адресу [3]. Они не используют структуру <code>XUartLite</code> (или используют её только для получения адреса). Они работают очень просто:
+            <ul>
+                <li><code>XUartLite_SendByte()</code> пытается записать байт в регистр передатчика. Но, как вы выяснили из своего опыта, <strong>она может не проверять, готов ли FIFO принять этот байт</strong> [4]. Именно поэтому ваш код и зависал — функция пыталась записать байт в полный FIFO и, в зависимости от реализации драйвера, либо теряла данные, либо входила в бесконечный цикл ожидания, который не мог завершиться из-за неверных условий.</li>
+                <li><code>XUartLite_RecvByte()</code> — аналогично, это блокирующая функция, которая будет ждать, пока в приемном FIFO не появятся данные [5].</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>3. Где найти примеры кода</h2>
+    <p>Документация — это хорошо, но часто проще учиться на готовых примерах.</p>
+    <ul>
+        <li>
+            <strong>Встроенные примеры Vitis (SDK):</strong> Самый лучший способ — обратиться к примерам, которые идут вместе с драйвером. Они находятся в директории установки Vitis. Для вашего <code>uartlite</code> путь будет примерно таким: <code>Vitis/2023.2/data/embeddedsw/XilinxProcessorIPLib/drivers/uartlite_vX_Y/examples/</code> (где <code>X_Y</code> — версия драйвера) [6]. Там вы найдете <code>xuartlite_low_level_example.c</code> (пример использования низкоуровневых функций) и <code>xuartlite_intr_example.c</code> (пример с прерываниями) [7].
+        </li>
+        <li>
+            <strong>Форумы сообщества (AMD Support):</strong> На форуме <a href="https://adaptivesupport.amd.com" target="_blank">adaptivesupport.amd.com</a> можно найти множество обсуждений и фрагментов кода. Например, там есть примеры использования <code>XUartLite_SendByte</code> для простейшей отправки [8] и обсуждение проблем с блокировкой при приеме [9].
+        </li>
+    </ul>
+
+    <div class="note">
+        <strong>Примечание:</strong> Цифры в квадратных скобках соответствуют сноскам в исходном тексте, которые, вероятно, указывают на источники информации.
+    </div>
+
+    <div class="footer">
+        Сгенерировано на основе предоставленного текста. Для актуальной информации всегда обращайтесь к официальной документации AMD.
+    </div>
+</body>
+</html>
