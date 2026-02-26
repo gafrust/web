@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПРОМТ: Эмуляция пульта дрона на ПЛИС</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: linear-gradient(145deg, #0b1a2e 0%, #1a2f3f 100%);
+            color: #e0f0fa;
+            line-height: 1.6;
+            padding: 2rem 1rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(18, 30, 41, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 2.5rem;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 25px 50px -10px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255,255,255,0.08);
+            border: 1px solid rgba(74, 144, 226, 0.25);
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a0d0ff, #6eb5ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.02em;
+            border-left: 6px solid #2d7ee7;
+            padding-left: 1.5rem;
+        }
+
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-top: 0.75rem;
+            margin-bottom: 2rem;
+            padding-left: 2rem;
+            color: #9bbdd5;
+            font-weight: 400;
+        }
+
+        .meta span {
+            background: rgba(0, 30, 60, 0.5);
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            border: 1px solid #2d4b6e;
+            font-size: 1rem;
+        }
+
+        .section {
+            background: rgba(12, 25, 40, 0.7);
+            border-radius: 2rem;
+            padding: 1.8rem 2rem;
+            margin-bottom: 2.2rem;
+            border: 1px solid #2a4359;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+
+        .section-title {
+            font-size: 1.9rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #8fcbff;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 2px dashed #2d7ee7;
+            padding-bottom: 0.5rem;
+        }
+
+        .section-title .emoji {
+            font-size: 2rem;
+            filter: drop-shadow(0 0 4px #3b82f6);
+        }
+
+        .chip {
+            display: inline-block;
+            background: #0e2a3b;
+            border-radius: 100px;
+            padding: 0.25rem 1rem;
+            font-family: 'Fira Code', 'JetBrains Mono', monospace;
+            font-weight: 500;
+            border: 1px solid #3d6c9b;
+            color: #b4dcff;
+            margin: 0.2rem 0;
+        }
+
+        .param-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.2rem;
+            margin: 1.5rem 0;
+        }
+
+        .param-card {
+            background: #0b1f2e;
+            border-radius: 1.5rem;
+            padding: 1.4rem 1.5rem;
+            border-left: 6px solid;
+            box-shadow: 0 10px 18px -8px #00000066;
+        }
+
+        .param-card.tx { border-left-color: #3b82f6; }
+        .param-card.rx { border-left-color: #22c55e; }
+
+        .param-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .param-card table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        .param-card td {
+            padding: 0.4rem 0.2rem;
+            border-bottom: 1px solid #1e3a4f;
+        }
+
+        .param-card td:first-child {
+            color: #a9c9e8;
+            width: 40%;
+        }
+
+        .hex-table {
+            background: #0a1a24;
+            border-radius: 1.2rem;
+            padding: 1rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            border: 1px solid #2e5470;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .byte-highlight {
+            background: #1e4c6e;
+            color: white;
+            font-weight: 600;
+            border-radius: 6px;
+            padding: 0.2rem 0.4rem;
+        }
+
+        .todo-list {
+            list-style: none;
+        }
+
+        .todo-list li {
+            margin-bottom: 0.8rem;
+            padding-left: 2rem;
+            position: relative;
+        }
+
+        .todo-list li::before {
+            content: "⏳";
+            position: absolute;
+            left: 0;
+            color: #f5b042;
+            font-size: 1.3rem;
+        }
+
+        .todo-list li.done::before {
+            content: "✅";
+            color: #4ade80;
+        }
+
+        .status-badge {
+            background: #1d4e6f;
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border: 1px solid #5b8fc0;
+        }
+
+        .plan-step {
+            background: #0e2538;
+            border-radius: 1.2rem;
+            padding: 1.2rem 1.8rem;
+            margin: 1.2rem 0;
+            border-left: 6px solid #f5b042;
+        }
+
+        .command-box {
+            background: #0f1d29;
+            border-radius: 1rem;
+            padding: 1.2rem;
+            font-family: 'Fira Code', monospace;
+            border: 1px solid #375e7e;
+            color: #d6edff;
+            margin: 1rem 0;
+        }
+
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #2d7ee7, transparent);
+            margin: 2rem 0;
+        }
+
+        .footer-questions {
+            background: #0c1d30;
+            border-radius: 2rem;
+            padding: 2rem;
+            border: 1px solid #2d7ee7;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 700px) {
+            .container { padding: 1.5rem; }
+            h1 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>✈️ ПРОМТ: Эмуляция пульта дрона на ПЛИС</h1>
+    <div class="meta">
+        <span>📅 2026-02-27</span>
+        <span>👥 Совместный анализ</span>
+        <span class="status-badge">🔥 Финальный этап</span>
+    </div>
+
+    <!-- ===== КОНТЕКСТ ===== -->
+    <div class="section">
+        <div class="section-title"><span class="emoji">📌</span> Контекст работы</div>
+        <p style="margin-bottom: 1rem; font-size: 1.1rem;">Мы успешно проанализировали UART-обмен между пультом и дроном. Определены два режима работы:</p>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <span class="chip">🔵 BIND-режим (сопряжение)</span>
+            <span class="chip">🟢 Рабочий режим (управление + телеметрия)</span>
+        </div>
+    </div>
+
+    <!-- ===== ЧТО ВЫЯСНЕНО ===== -->
+    <div class="section">
+        <div class="section-title"><span class="emoji">✅</span> Что уже выяснено (итоговые параметры)</div>
+        <div class="param-grid">
+            <div class="param-card tx">
+                <h3>📤 TX (пульт → дрон)</h3>
+                <table>
+                    <tr><td>Синхробайт</td><td><span class="chip">0xEE</span></td></tr>
+                    <tr><td>Длина пакета</td><td><strong>26 байт</strong></td></tr>
+                    <tr><td>Формат</td><td>8N1, 400000 бод</td></tr>
+                    <tr><td>Структура</td><td><code>[EE][8b addr][17b data][CRC]</code></td></tr>
+                </table>
+            </div>
+            <div class="param-card rx">
+                <h3>📥 RX (дрон → пульт)</h3>
+                <table>
+                    <tr><td>Синхробайт</td><td><span class="chip">0xEA</span></td></tr>
+                    <tr><td>Длина пакета</td><td><strong>24 байта</strong></td></tr>
+                    <tr><td>Формат</td><td>8N1, 400000 бод</td></tr>
+                    <tr><td>Структура</td><td><code>[EA][23b телеметрии]</code></td></tr>
+                </table>
+            </div>
+        </div>
+        <div style="margin-top: 1rem; background: #0f263a; border-radius: 1.5rem; padding: 1.5rem;">
+            <h4 style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">📊 Наблюдения из последнего лога (parser9_4_0.py)</h4>
+            <ul style="list-style: disc; padding-left: 1.5rem; color: #c9e2f5;">
+                <li>Пульт отправил <strong>43 пакета</strong>, дрон ответил <strong>32 раза</strong> (~74% успеха)</li>
+                <li>Интервалы: от <strong>11 мс</strong> до <strong>5.5 с</strong> — явно процесс BIND (перебор адресов)</li>
+                <li>В RX часто повторяется паттерн <code class="chip">ff 23 6e</code> — вероятно, ретрансляция ID дрона</li>
+                <li>Повторяющиеся адреса в TX: 
+                    <code class="chip">de a2 5d 43 b5 ff 71 94</code>, 
+                    <code class="chip">f2 44 ac a6 97 97 5d ca</code>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ===== НЕРЕШЁННЫЕ ВОПРОСЫ ===== -->
+    <div class="section">
+        <div class="section-title"><span class="emoji">❓</span> Нерешённые вопросы (цели на завтра)</div>
+        <div class="todo-list">
+            <li>Где в TX пакете находится <span class="chip">длина</span>? (байт 1 = 0x1A ?)</li>
+            <li>Есть ли поле <span class="chip">тип пакета</span>? (как в CRSF: байт 2 = 0x16?)</li>
+            <li>Как упакованы <strong>16 каналов</strong> в 17 байт? (11 бит на канал?)</li>
+            <li><span class="chip">Алгоритм CRC</span> — XOR, сумма, CRC8 (полином?)</li>
+            <li>Структура телеметрии: что означают байты в RX?</li>
+            <li>Как выглядит <strong>успешный BIND</strong>? (какой пакет дрона подтверждает связывание)</li>
+            <li>Есть ли отдельный пакет для переключения в рабочий режим?</li>
+        </div>
+    </div>
+
+    <!-- ===== ПЛАН НА ЗАВТРА ===== -->
+    <div class="section">
+        <div class="section-title"><span class="emoji">⏳</span> План на 2026-02-27 (завтра)</div>
+
+        <div class="plan-step">
+            <h3 style="color: #f5b042;">1. Запись полного цикла (критически важно!)</h3>
+            <div class="command-box">
+                python parser.py -P COM49 -b 400000 -o full_cycle.log
+            </div>
+            <ol style="padding-left: 1.5rem; margin-top: 0.8rem;">
+                <li>Выключить всё</li>
+                <li>Запустить парсер с сохранением в файл</li>
+                <li>Включить дрон</li>
+                <li>Включить пульт в режиме BIND</li>
+                <li>Дождаться связывания (когда дрон начнёт отвечать)</li>
+                <li>Переключить пульт в рабочий режим</li>
+                <li>Подвигать стиками (изменение каналов)</li>
+                <li>Выключить пульт, затем дрон</li>
+                <li>Сохранить лог</li>
+            </ol>
+        </div>
+
+        <div class="plan-step">
+            <h3 style="color: #f5b042;">2. Анализ BIND-процесса</h3>
+            <ul>
+                <li>Найти момент первого ответа дрона</li>
+                <li>Сравнить пакеты ДО и ПОСЛЕ успешного связывания</li>
+                <li>Определить, какой байт в TX является ID дрона (перебирается)</li>
+                <li>Проверить, повторяет ли дрон этот ID в ответе</li>
+            </ul>
+        </div>
+
+        <div class="plan-step">
+            <h3 style="color: #f5b042;">3. Декомпозиция TX пакета</h3>
+            <ul>
+                <li>Найти поле длины (байт 1 = 0x1A? = 26)</li>
+                <li>Найти поле типа (байт 2 = 0x16? как в CRSF)</li>
+                <li>Распаковать 16 каналов из 17 байт (11 бит на канал)</li>
+            </ul>
+        </div>
+
+        <div class="plan-step">
+            <h3 style="color: #f5b042;">4. Декомпозиция RX пакета</h3>
+            <ul>
+                <li>Найти поле с ID дрона (повтор из запроса)</li>
+                <li>Идентифицировать телеметрию: RSSI, Vbat, ток, высота, скорость, GPS</li>
+            </ul>
+        </div>
+
+        <div class="plan-step">
+            <h3 style="color: #f5b042;">5. Поиск CRC</h3>
+            <p>Взять 10 пакетов с одинаковым адресом, но разными данными:</p>
+            <ul>
+                <li>XOR всех байт кроме последнего</li>
+                <li>Сумма (младший байт)</li>
+                <li>CRC8 с полиномами: <code>0x31, 0xD5, 0x07, 0x8C</code></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ===== ПРОМЕЖУТОЧНЫЙ ИТОГ ===== -->
+    <div style="background: #0d3131; border-radius: 1.5rem; padding: 1.5rem 2rem; margin-bottom: 2rem; border: 1px solid #2e9f9f;">
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <span style="font-size: 2.5rem;">🏆</span>
+            <span style="font-weight: 600; font-size: 1.7rem;">Промежуточный итог на сегодня</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 1.5rem;">
+            <span class="chip" style="background: #136b6b;">✅ Протокол стабилен, синхробайты определены</span>
+            <span class="chip" style="background: #136b6b;">✅ Длины пакетов известны (TX=26, RX=24)</span>
+            <span class="chip" style="background: #136b6b;">✅ Зафиксирован процесс BIND (перебор адресов)</span>
+            <span class="chip" style="background: #136b6b;">✅ Есть рабочий парсер с временным анализом</span>
+        </div>
+        <p style="margin-top: 1.5rem; font-size: 1.2rem;">✨ Завтра добиваем оставшиеся вопросы и пишем финальную спецификацию для ПЛИС!</p>
+    </div>
+
+    <!-- ===== ВОПРОСЫ ДЛЯ ПРОДОЛЖЕНИЯ ===== -->
+    <div class="footer-questions">
+        <div class="section-title" style="border-bottom-color: #f5b042; margin-top: 0;"><span class="emoji">❓</span> Вопросы для продолжения</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div>
+                <span class="chip">⚡ Осциллограф</span> – можно ли снять временную развёртку переключения TX/RX?
+            </div>
+            <div>
+                <span class="chip">📄 Документация</span> – есть ли китайская/английская документация на дрон?
+            </div>
+            <div>
+                <span class="chip">🔄 Телеметрия</span> – нужна только эмуляция пульта или полная двусторонняя связь?
+            </div>
+            <div>
+                <span class="chip">🔧 ПЛИС</span> – какая именно (Xilinx/Intel/Lattice)? Нужны параметры для расчёта делителя UART.
+            </div>
+            <div>
+                <span class="chip">🧩 UART-ядро</span> – пишем сами или используем готовое?
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ЦЕЛЬ НА ЗАВТРА ===== -->
+    <hr>
+    <div style="text-align: center; padding: 1rem;">
+        <span style="background: #1e4a7a; padding: 0.8rem 2.5rem; border-radius: 100px; font-weight: 700; font-size: 1.5rem; border: 1px solid #63b3ff;">
+            🎯 ЦЕЛЬ: ПОЛНАЯ СПЕЦИФИКАЦИЯ ПРОТОКОЛА К КОНЦУ ДНЯ
+        </span>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; margin: 2rem 0;">
+        <span class="chip">📦 Форматы TX/RX</span>
+        <span class="chip">🔐 Алгоритм CRC</span>
+        <span class="chip">🔄 Процесс BIND</span>
+        <span class="chip">📈 Формат каналов</span>
+        <span class="chip">📊 Телеметрия</span>
+        <span class="chip">⚙️ Переход в рабочий режим</span>
+    </div>
+
+    <div style="background: #0c1e2c; border-radius: 1.5rem; padding: 2rem; text-align: center; border: 1px dashed #3b82f6;">
+        <p style="font-size: 1.7rem; font-weight: 500; letter-spacing: 0.5px;">🚀 ЗАВТРА — ФИНАЛЬНЫЙ РЫВОК!</p>
+        <p style="color: #9cbdd9;">Код, парсеры, логи – всё готово. Осталось собрать воедино и задокументировать.</p>
+    </div>
+</div>
+</body>
+</html>
