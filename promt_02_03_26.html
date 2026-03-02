@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Промт на завтра • CRSF & EdgeTX</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: linear-gradient(145deg, #0b0e14 0%, #1a1f2c 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            color: #e9f1f7;
+        }
+
+        .card {
+            max-width: 780px;
+            width: 100%;
+            background: rgba(22, 28, 40, 0.9);
+            backdrop-filter: blur(12px);
+            border-radius: 3rem;
+            padding: 2.5rem 2.2rem;
+            box-shadow: 0 25px 45px -8px rgba(0,0,0,0.6), 0 0 0 1px rgba(74, 144, 226, 0.15) inset;
+            border: 1px solid rgba(90, 150, 230, 0.2);
+            transition: all 0.2s;
+        }
+
+        .date-badge {
+            display: inline-block;
+            background: #2d374e;
+            border-radius: 60px;
+            padding: 0.5rem 1.4rem;
+            font-size: 0.9rem;
+            letter-spacing: 0.4px;
+            font-weight: 500;
+            color: #bdd3ff;
+            border: 1px solid #3f4b66;
+            margin-bottom: 1.8rem;
+            box-shadow: 0 2px 6px rgba(0,20,40,0.5);
+        }
+
+        h1 {
+            font-size: 2.7rem;
+            font-weight: 600;
+            line-height: 1.2;
+            margin-bottom: 1.2rem;
+            background: linear-gradient(120deg, #ffffff, #b0d0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.7rem 1rem;
+            margin: 2rem 0 1.8rem;
+        }
+
+        .chip {
+            background: #262f40;
+            border-radius: 40px;
+            padding: 0.5rem 1.4rem;
+            font-size: 0.95rem;
+            font-weight: 450;
+            border: 1px solid #3f506f;
+            color: #ccdeff;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chip::before {
+            content: "⚡";
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .promt-box {
+            background: #0f131e;
+            border-radius: 2rem;
+            padding: 2rem 2rem 1.8rem;
+            border-left: 5px solid #3b82f6;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5), 0 8px 18px #00000040;
+            margin: 2rem 0 2rem;
+        }
+
+        .promt-box p {
+            font-size: 1.3rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+            color: #f0f4ff;
+            font-weight: 400;
+        }
+
+        .promt-box strong {
+            color: #ffdb7e;
+            font-weight: 600;
+            background: rgba(255,200,80,0.1);
+            padding: 0.1rem 0.3rem;
+            border-radius: 8px;
+        }
+
+        .bullet-list {
+            list-style: none;
+            margin: 2rem 0 1rem;
+        }
+
+        .bullet-list li {
+            padding: 0.6rem 0 0.6rem 2.2rem;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="%233b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>') left center no-repeat;
+            background-size: 1.2rem;
+            color: #d3e0fd;
+            font-size: 1.1rem;
+        }
+
+        .footer-note {
+            background: #1d2537;
+            border-radius: 1.5rem;
+            padding: 1.4rem 2rem;
+            margin-top: 2rem;
+            border: 1px dashed #4f6390;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .footer-note span {
+            font-size: 2.2rem;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: #8899cc;
+            border-top: 1px solid #283044;
+            padding-top: 1.5rem;
+            margin-top: 1.8rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .tag {
+            background: #1f2b3c;
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            color: #90a9e0;
+            font-family: monospace;
+            font-size: 1rem;
+            border: 1px solid #32415f;
+        }
+
+        @media (max-width: 500px) {
+            .card { padding: 1.8rem; }
+            h1 { font-size: 2rem; }
+            .promt-box p { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    
+    <div class="date-badge">
+        📆 ЗАВТРА — 3 марта 2026 · Сформировано из сегодняшнего дня
+    </div>
+
+    <h1>
+        Продолжить CRSF &<br>биндинг в EdgeTX
+    </h1>
+
+    <div class="chip-row">
+        <span class="chip">commits 607623cf</span>
+        <span class="chip">Boxer v2.8.0</span>
+        <span class="chip">TRACE + CRC</span>
+        <span class="chip">модуль 4in1</span>
+    </div>
+
+    <!-- Основной промт — что делать завтра -->
+    <div class="promt-box">
+        <p>
+            <strong>🔹 Прошить DEBUG‑сборку</strong> · включить <code style="background:#2a3448; padding:2px 8px; border-radius:12px;">-DDEBUG=ON</code><br>
+            <strong>🔹 Поймать TRACE через USB (VCP)</strong> · терминал 115200 бод<br>
+            <strong>🔹 Проверить CRC</strong> в createCrossfireModelIDFrame — crc8_BA(frame+2, 6)<br>
+            <strong>🔹 Вывести на экран</strong> код бинда / модель ID при COMMAND_ID=0x32
+        </p>
+    </div>
+
+    <!-- что уже есть / что сделано сегодня -->
+    <ul class="bullet-list">
+        <li>Найден коммит 607623cf — исходники EdgeTX Boxer 2.8.0</li>
+        <li>Разобраны файлы crossfire.cpp / telemetry crossfire — структура COMMAND</li>
+        <li>Обнаружены два диска при USB: SD‑карта и память мультимодуля</li>
+        <li>Поняты пакеты биндинга: 0x32, 0x05, 0x10, CRC8‑BA (полином 0xBA)</li>
+        <li>Подготовлен отладочный код TRACE для processCrossfireTelemetryFrame</li>
+    </ul>
+
+    <!-- напоминание про com-порт и терминал -->
+    <div class="footer-note">
+        <span>📡</span>
+        <span><strong>Порт назначается автоматически</strong> — после подключения Boxer по USB (с DEBUG‑прошивкой) ищем новый COM / ttyACM.  
+        Терминал: 115200 8N1.</span>
+    </div>
+
+    <!-- технические теги и хэш -->
+    <div class="meta">
+        <span class="tag">#pragma once</span>
+        <span class="tag">COMMAND_ID 0x32</span>
+        <span class="tag">MODULE_ADDRESS 0xEE</span>
+        <span class="tag">607623cf</span>
+    </div>
+
+    <!-- невидимый комментарий для разработчика, чисто для атмосферы -->
+    <!-- Завтра: убедиться, что crc8_BA считается верно, и что модель ID реально уходит в модуль -->
+</div>
+</body>
+</html>
