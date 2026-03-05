@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>БК-0010-01: Всё обсуждение сегодня</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #0c0b0b;
+            color: #d4d4d4;
+            margin: 20px;
+            line-height: 1.6;
+            background-image: radial-gradient(rgba(0, 255, 0, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #1e1e1e;
+            border: 2px solid #3a6ea5;
+            padding: 25px;
+            box-shadow: 10px 10px 0 #0f2a3f;
+        }
+        h1, h2, h3 {
+            color: #6ad4b2;
+            border-bottom: 1px solid #3a6ea5;
+            padding-bottom: 5px;
+            font-weight: normal;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: 3px solid #6ad4b2;
+            font-size: 2.2em;
+            text-shadow: 3px 3px 0 #0f2a3f;
+        }
+        .example-code {
+            background-color: #0e1a20;
+            border-left: 5px solid #6ad4b2;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            color: #e6e6e6;
+            border-radius: 0 8px 8px 0;
+        }
+        .command-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .command-table th {
+            background-color: #2d4d6e;
+            color: #0e1a20;
+            text-align: left;
+            padding: 8px;
+            border: 1px solid #3a6ea5;
+        }
+        .command-table td {
+            padding: 8px;
+            border: 1px solid #3a6ea5;
+            vertical-align: top;
+        }
+        .command-table tr:nth-child(even) {
+            background-color: #152b36;
+        }
+        a {
+            color: #d4af37;
+            text-decoration: none;
+            border-bottom: 1px dashed #d4af37;
+        }
+        a:hover {
+            color: #f5e56b;
+            border-bottom: 1px solid #f5e56b;
+        }
+        .repo-link {
+            background-color: #2a2a2a;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #d4af37;
+        }
+        .note {
+            background-color: #0f2a3f;
+            border: 1px solid #3a6ea5;
+            padding: 10px;
+            color: #b0e0e6;
+            margin: 10px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #6c757d;
+            font-size: 0.9em;
+            border-top: 1px solid #3a6ea5;
+            padding-top: 10px;
+        }
+        .badge {
+            background-color: #2d4d6e;
+            color: #0e1a20;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 БК-0010-01<br>ВСЁ, ЧТО МЫ ОБСУДИЛИ СЕГОДНЯ</h1>
+        
+        <div class="note">
+            <strong>📌 Сегодняшняя встреча:</strong> Мы подробно разобрали программирование на Вильнюсском Бейсике, графику, звук, команды работы с памятью и, самое главное, нашли работающие исходные коды системного ПО и современных игр.
+        </div>
+
+        <h2>🖥️ Основы программирования (простые примеры)</h2>
+        <p>Вот базовые программы, с которых мы начали:</p>
+        
+        <div class="example-code">
+<span style="color:#6ad4b2;">10 CLS</span>
+<span style="color:#d4af37;">20 PRINT "HELLO WORLD!"</span>
+30 PRINT "ПРИВЕТ, БК-0010!"
+40 GOTO 40
+        </div>
+        <p><span class="badge">Классика</span> Простейший "Hello World" с бесконечным циклом для удержания результата.</p>
+
+        <div class="example-code">
+<span style="color:#6ad4b2;">10 CLS</span>
+20 COLOR 7
+30 FOR I=1 TO 200 STEP 10
+40 PSET (I, I)
+50 NEXT I
+60 LINE (50,50)-(100,100),2
+70 GOTO 70
+        </div>
+        <p><span class="badge">Графика</span> Диагональ из точек и линия. Всё работает через видеопамять напрямую.</p>
+
+        <div class="example-code">
+10 FOR I=1 TO 7
+20 READ A
+30 SOUND A, 10
+40 NEXT I
+50 DATA 261,293,329,349,392,440,494
+60 GOTO 60
+        </div>
+        <p><span class="badge">Звук</span> Проигрывание нот через встроенный динамик. Команда <code>SOUND</code> управляет частотой и длительностью.</p>
+
+        <h2>📚 Полный справочник возможностей Бейсика</h2>
+        <p>Вильнюсский Бейсик (BK BASIC) — это компилятор, а не интерпретатор, что давало высокую скорость.</p>
+        
+        <h3>🔧 Команды управления</h3>
+        <table class="command-table">
+            <tr><th>Команда</th><th>Описание</th></tr>
+            <tr><td>RUN, CONT</td><td>Запуск и продолжение программы</td></tr>
+            <tr><td>LIST, NEW, RENUM</td><td>Работа с текстом программы</td></tr>
+            <tr><td>CSAVE "имя", CLOAD "имя"</td><td>Сохранение/загрузка на магнитофон</td></tr>
+        </table>
+
+        <h3>🧮 Переменные и типы данных</h3>
+        <table class="command-table">
+            <tr><th>Тип</th><th>Суффикс</th><th>Пример</th></tr>
+            <tr><td>Целый</td><td>%</td><td>A% = 10 (диапазон -32768..32767)</td></tr>
+            <tr><td>Вещественный (одинар.)</td><td>!</td><td>B! = 3.14</td></tr>
+            <tr><td>Вещественный (двойн.)</td><td>—</td><td>C = 123.456 (по умолчанию)</td></tr>
+            <tr><td>Строковый</td><td>$</td><td>D$ = "ПРИВЕТ"</td></tr>
+        </table>
+        <p><strong>Особенность:</strong> Поддержка разных систем счисления прямо в коде: <code>&B1010</code> (двоичная), <code>&O12</code> (восьмеричная), <code>&HA</code> (шестнадцатеричная).</p>
+
+        <h3>🎨 Графические операторы</h3>
+        <table class="command-table">
+            <tr><td>COLOR N</td><td>Установка текущего цвета (0-3)</td></tr>
+            <tr><td>PSET (X,Y), C</td><td>Поставить точку цветом C</td></tr>
+            <tr><td>LINE (X1,Y1)-(X2,Y2), C</td><td>Нарисовать линию</td></tr>
+            <tr><td>CIRCLE (X,Y), R, C</td><td>Окружность радиусом R</td></tr>
+            <tr><td>PAINT (X,Y), C, B</td><td>Заливка области</td></tr>
+            <tr><td>DRAW "строка"</td><td>Векторная графика (U, D, L, R, E, F, G, H)</td></tr>
+            <tr><td>@(X,Y)</td><td>Относительные координаты от последней точки</td></tr>
+        </table>
+
+        <h3>⚙️ Продвинутые операции (работа с железом)</h3>
+        <table class="command-table">
+            <tr><td>POKE адрес, значение</td><td>Прямая запись в память</td></tr>
+            <tr><td>X = PEEK(адрес)</td><td>Чтение из памяти</td></tr>
+            <tr><td>OUT порт, значение</td><td>Вывод в системный порт</td></tr>
+            <tr><td>Y = USR0(X)</td><td>Вызов подпрограммы машинного кода</td></tr>
+            <tr><td>BSAVE "имя", начало, конец</td><td>Сохранение бинарных данных на ленту</td></tr>
+        </table>
+
+        <h2>📟 Технические характеристики БК-0010-01</h2>
+        <table class="command-table">
+            <tr><th>Компонент</th><th>Характеристика</th></tr>
+            <tr><td>Процессор</td><td><strong>К1801ВМ1</strong>, 16 разрядов, совместим с PDP-11</td></tr>
+            <tr><td>Тактовая частота</td><td>3 МГц (ок. 300 тыс. оп/с)</td></tr>
+            <tr><td>ОЗУ</td><td>32 Кбайт (16 Кбайт — видео, 16 Кбайт — программы)</td></tr>
+            <tr><td>ПЗУ</td><td>32 Кбайт (8 Кбайт — монитор, 24 Кбайт — Бейсик)</td></tr>
+            <tr><td>Графика</td><td>512x256 ч/б или 256x256, 4 цвета (красный, зелёный, синий, чёрный)</td></tr>
+            <tr><td>Звук</td><td>Встроенный динамик (команда SOUND)</td></tr>
+            <tr><td>Клавиатура</td><td>Механическая, 92 клавиши</td></tr>
+            <tr><td>Накопитель</td><td>Бытовой кассетный магнитофон (1200 бод)</td></tr>
+            <tr><td>Разъёмы</td><td>ТВ (ч/б), ЦТВ (цвет), системная шина МПИ (Q-Bus)</td></tr>
+        </table>
+
+        <h2>🔍 Где найти исходные коды (то, что вы просили!)</h2>
+        <p>Сегодня мы нашли настоящие сокровища — открытые репозитории с исходниками для БК. Вот они с пояснениями:</p>
+
+        <div class="repo-link">
+            <strong>📂 <a href="https://github.com/andpp/BK0010_Basic_Rom_Src" target="_blank">andpp/BK0010_Basic_Rom_Src</a></strong> — <span style="color:#6ad4b2;">СВЯЩЕННЫЙ ГРААЛЬ!</span><br>
+            Полные исходные коды ПЗУ Вильнюсского Бейсика на Macro-11. Здесь можно увидеть, как реализованы команды PRINT, SOUND, математика на самом низком уровне. Изучая этот код, вы поймёте архитектуру БК досконально.
+        </div>
+
+        <div class="repo-link">
+            <strong>📂 <a href="https://github.com/smaslovski/ponydiamonds/tree/macro11" target="_blank">smaslovski/ponydiamonds (ветка macro11)</a></strong> — <span style="color:#6ad4b2;">ИГРА И УЧЕБНИК В ОДНОМ!</span><br>
+            Красочная аркадная игра про сбор падающих алмазов. Написана на ассемблере PDP-11. В репозитории есть папка <code>examples</code> с простыми примерами: как работать с экраном, клавиатурой, таймером и звуком. Идеально для старта в ассемблере!
+        </div>
+
+        <div class="repo-link">
+            <strong>📂 <a href="https://github.com/tereshenkovav/BkGccGame" target="_blank">tereshenkovav/BkGccGame</a></strong><br>
+            Игра на Си для БК-0010, написанная с использованием компилятора gcc-pdp11. Код на Си с ассемблерными вставками, использует псевдографику. Включает файлы:<br>
+            - <code>bkgccgame.c</code> — основной код игры<br>
+            - <code>bk0010_rtl.c/.h</code> — библиотека для разработки под БК<br>
+            - <code>const_en/ru.h</code> — константы и тексты<br>
+            - Скрипты сборки <code>build.bat</code> и утилита <code>aout2bin.exe</code><br>
+            Отличный пример современной кросс-компиляции для ретро-платформы.
+        </div>
+
+        <div class="note">
+            <strong>💡 Совет:</strong> Для изучения начните с <code>ponydiamonds/examples</code> (ассемблер) или с <code>BkGccGame</code> (Си). А когда захотите понять глубину — ныряйте в исходники ПЗУ Бейсика.
+        </div>
+
+        <h2>🎯 Как использовать эти исходники сегодня</h2>
+        <p>
+            1. **Эмуляторы**: Скачайте любой эмулятор БК (например, формата .GID или Android-эмуляторы). Скомпилированные бинарники (или .wav-файлы) можно загрузить прямо в них.<br>
+            2. **Сборка**: Для ассемблерных проектов понадобится кросс-ассемблер (например, из проекта <code>bk-emulator</code>). Для Си — среда с компилятором gcc-pdp11.<br>
+            3. **Реальная БК**: Если у вас живая БК, собранные .bin файлы можно преобразовать в .wav с помощью утилит типа <code>bin2wav</code> и загрузить через магнитофонный вход.
+        </p>
+
+        <h2>📚 Дополнительные материалы</h2>
+        <ul>
+            <li><strong>Книга "Программирование на БК-0010-01"</strong> — библия программиста, доступна в сети. Есть и теория, и примеры на ассемблере.</li>
+            <li><strong>Онлайн-утилиты</strong>: например, <code>bk-utils</code> на GitHub Pages для конвертации образов.</li>
+            <li><strong>Демосцена</strong>: работы групп Caroline software, Excess team — вдохновляющие примеры того, что можно выжать из БК.</li>
+        </ul>
+
+        <div class="footer">
+            Страница создана по итогам обсуждения. Сегодня мы не только вспомнили классику, но и нашли живые, работающие исходные коды, которые позволяют копать действительно глубоко. Приятного ретро-программирования! 🕹️
+        </div>
+    </div>
+</body>
+</html>
