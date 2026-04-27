@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Разбор кода Java-приложения: автоматическое vs ручное, темы для изучения</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #f2f5f9;
+            font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
+            line-height: 1.5;
+            padding: 2rem 1rem;
+            color: #1e2a3a;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            overflow: hidden;
+            padding: 2rem 2rem 2.5rem 2rem;
+        }
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #1e2a3a, #2c3e4e);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.01em;
+        }
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 3px solid #e2e8f0;
+            color: #0f2b3d;
+        }
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #2c3e4e;
+        }
+        p {
+            margin-bottom: 1rem;
+            color: #2c3e4e;
+        }
+        .grid-2col {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+            margin: 1.5rem 0;
+        }
+        .card {
+            flex: 1 1 280px;
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 1.2rem 1.4rem;
+            border-left: 5px solid #3b82f6;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+        .card h4 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            color: #0f172a;
+        }
+        .badge-auto {
+            background: #e6f7ec;
+            color: #1e7b3c;
+            padding: 0.2rem 0.7rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 0.6rem;
+        }
+        .badge-manual {
+            background: #ffe8e0;
+            color: #c2410c;
+            padding: 0.2rem 0.7rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 0.6rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: #ffffff;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        th {
+            background-color: #eef2ff;
+            text-align: left;
+            padding: 12px 15px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        td {
+            background-color: #ffffff;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .code-block {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 1rem 1.2rem;
+            border-radius: 18px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            margin: 1rem 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .inline-code {
+            font-family: monospace;
+            background: #f1f5f9;
+            padding: 0.2rem 0.4rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #b91c1c;
+        }
+        ul, ol {
+            margin-left: 1.6rem;
+            margin-bottom: 1rem;
+        }
+        li {
+            margin-bottom: 0.4rem;
+        }
+        hr {
+            margin: 2rem 0;
+            border: 0;
+            height: 2px;
+            background: linear-gradient(to right, #cbd5e1, transparent);
+        }
+        footer {
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            text-align: center;
+            color: #5b6e8c;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1.5rem;
+        }
+        .topic-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .topic-card {
+            background: #fef9e3;
+            border-radius: 24px;
+            padding: 0.8rem 1rem;
+            font-weight: 500;
+            border: 1px solid #fde68a;
+        }
+        @media (max-width: 700px) {
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔍 Анализ кода: <span style="color:#2563eb;">UavrngFrame.java</span></h1>
+    <p>Полный разбор того, что было <strong>создано автоматически</strong> визуальным редактором NetBeans, а что <strong>добавлено вручную</strong> программистом. В конце — список тем, которые нужно освоить, чтобы свободно понимать и дорабатывать подобные проекты.</p>
+    
+    <h2>🧩 Автоматически сгенерированное (NetBeans GUI Builder)</h2>
+    <p>Всё, что находится <strong>внутри метода <code>initComponents()</code></strong> и в секции <code>// Variables declaration - do not modify</code> — создано IDE при перетаскивании компонентов в режиме <strong>Design</strong>.</p>
+    <div class="grid-2col">
+        <div class="card">
+            <span class="badge-auto">⚙️ Автоматически</span>
+            <h4>Компоненты GUI</h4>
+            <ul style="margin-bottom:0">
+                <li><code>private JTextField distTextField1, ...</code></li>
+                <li><code>JButton serialPortButton</code></li>
+                <li><code>JComboBox&lt;String&gt; modeComboBox</code></li>
+                <li><code>JLabel statusLabel</code> и другие</li>
+            </ul>
+        </div>
+        <div class="card">
+            <span class="badge-auto">📐 initComponents()</span>
+            <h4>Метод инициализации формы</h4>
+            <ul>
+                <li>Создание объектов (new JPanel, new JLabel...)</li>
+                <li>Установка свойств (<code>setBorder</code>, <code>setText</code>, размеры)</li>
+                <li>Настройка <code>GroupLayout</code></li>
+                <li>Подключение слушателей (заготовки обработчиков)</li>
+            </ul>
+        </div>
+        <div class="card">
+            <span class="badge-auto">📦 pack() & конструктор</span>
+            <h4>Автоматические вызовы</h4>
+            <p>В конце <code>initComponents()</code> вызывается <code>pack()</code>. В конструкторе по умолчанию стоит <code>initComponents();</code> (эту строку IDE генерирует).</p>
+        </div>
+    </div>
+    
+    <h2>✍️ Добавленное вручную (логика приложения)</h2>
+    <p>Программист написал всё, что обеспечивает <strong>функциональность</strong>: работа с COM-портом, парсинг протокола, таймер, логгирование, бизнес-логику.</p>
+    <div class="grid-2col">
+        <div class="card">
+            <span class="badge-manual">🧠 Импорты и интерфейс</span>
+            <h4>Расширение возможностей</h4>
+            <p><code>import jssc.*;</code><br>
+            <code>implements SerialPortEventListener</code></p>
+            <p>Добавлены константы <code>MODE_OFF, MODE_ON, MODE_TEST</code>.</p>
+        </div>
+        <div class="card">
+            <span class="badge-manual">📡 Поля для логики</span>
+            <h4>Не GUI-поля</h4>
+            <p><code>private SerialPort serialPort;<br>
+            private boolean log;<br>
+            private Timer secTimer;<br>
+            private int numberOfReceivedPackets;<br>
+            private PrintWriter logWriter;</code> и другие.</p>
+        </div>
+        <div class="card">
+            <span class="badge-manual">⚡ Методы работы с портом</span>
+            <h4>serialPortInitialize, writeRegister, readRegister</h4>
+            <p>➕ метод <code>serialEvent()</code> – разбор пакетов <code>0xA5 ... 0x5A</code><br>
+            ➕ <code>pause()</code>, обработчики кнопок с реальной логикой.</p>
+        </div>
+        <div class="card">
+            <span class="badge-manual">🕒 Таймер и лог</span>
+            <h4>Пользовательский код в конструкторе</h4>
+            <p>Создание <code>Timer</code> для обновления статуса, открытие/запись в <code>uavrng.log</code>, инициализация порта.</p>
+        </div>
+    </div>
+    
+    <h2>📊 Сравнительная таблица: что IDE, что разработчик</h2>
+    <table>
+        <thead>
+            <tr><th style="width:30%">Элемент или часть кода</th><th>Создано автоматически (NetBeans)</th><th>Написано / добавлено вручную</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Объявления <code>JButton, JTextField, JComboBox</code> и т.д.</td><td>✅ полностью</td><td>—</td></tr>
+            <tr><td>Метод <code>initComponents()</code></td><td>✅ (около 300+ строк)</td><td>— (запрещено редактировать)</td></tr>
+            <tr><td>Конструктор <code>UavrngFrame()</code></td><td>только <code>initComponents();</code></td><td>➕ инициализация порта, лога, таймера, полей <code>regMode</code> и др.</td></tr>
+            <tr><td>Поля <code>SerialPort, Timer, PrintWriter</code>, флаги</td><td>❌</td><td>✅ объявлены и проинициализированы</td></tr>
+            <tr><td>Обработчики событий (кнопки)</td><td>❌ пустые заготовки (сигнатуры методов)</td><td>✅ наполнены реальным кодом: отправка команд, чтение регистров, проверка порта</td></tr>
+            <tr><td>Метод <code>serialEvent()</code></td><td>—</td><td>✅ полностью ручная реализация разбора протокола</td></tr>
+            <tr><td><code>writeRegister() / readRegister()</code></td><td>—</td><td>✅ формирование пакетов <code>0xA5 ... 0x5A</code>, запись в порт</td></tr>
+            <tr><td>Cоздание <code>statusLabel</code> и его размещение</td><td>✅</td><td>—</td></tr>
+            <tr><td>Закрытие лога и остановка таймера (<code>windowClosing</code>)</td><td>❌</td><td>✅ </td></tr>
+        </tbody>
+    </table>
+    
+    <h2>📚 Темы, которые нужно освоить, чтобы понимать этот код</h2>
+    <p>Этот проект объединяет несколько важных областей Java-разработки. Ниже — структурированный список.</p>
+    
+    <h3>🔹 Основы Java (обязательный фундамент)</h3>
+    <ul>
+        <li>Классы, объекты, конструкторы, поля, методы</li>
+        <li>Модификаторы: <code>private, public, static, final</code></li>
+        <li>Массивы, циклы <code>for / while</code></li>
+        <li>Условные операторы, исключения (try-catch)</li>
+    </ul>
+    
+    <h3>🔹 Работа с COM-портом (библиотека JSSC)</h3>
+    <ul>
+        <li>Классы: <code>SerialPort, SerialPortEvent, SerialPortEventListener, SerialPortException</code></li>
+        <li>Открытие, закрытие порта, настройка скорости (460800), битов данных</li>
+        <li>Чтение байтов: <code>readIntArray()</code>, маски событий <code>MASK_RXCHAR</code></li>
+        <li>Обработчик <code>serialEvent()</code>: реакция на приход данных</li>
+    </ul>
+    
+    <h3>🔹 Протоколы и побитовые операции</h3>
+    <ul>
+        <li>Формат кадра: стартовый байт <code>0xA5</code>, тип, длина, данные, конечный байт <code>0x5A</code></li>
+        <li>Операторы <code>&</code>, <code>|</code>, <code>>></code>, <code><<</code>, сборка int из байтов</li>
+        <li>Big-endian порядок байтов, работа с битовыми масками</li>
+    </ul>
+    
+    <h3>🔹 Swing (создание GUI)</h3>
+    <ul>
+        <li><code>JFrame, JPanel, JLabel, JTextField, JButton, JComboBox, JTabbedPane</code></li>
+        <li>Менеджер размещения <code>GroupLayout</code> (автоматический от NetBeans)</li>
+        <li>Обработка событий: <code>ActionListener</code> (анонимные классы, method references)</li>
+        <li>Модели комбобоксов, изменение текста полей <code>setText()</code></li>
+    </ul>
+    
+    <h3>🔹 Многопоточность и асинхронность</h3>
+    <ul>
+        <li><code>javax.swing.Timer</code> – периодическое обновление UI (без блокировки EDT)</li>
+        <li><code>Thread.sleep()</code> – задержки, но осторожно (в данном коде не в EDT)</li>
+        <li>События порта приходят в отдельном потоке – обновление полей <code>setText</code> обычно допустимо, но надо знать про <code>SwingUtilities.invokeLater</code> для сложных операций</li>
+    </ul>
+    
+    <h3>🔹 Работа с файлами (логгирование)</h3>
+    <ul>
+        <li><code>File, FileWriter, PrintWriter</code>, создание/дозапись файла</li>
+        <li>Обработка <code>IOException</code></li>
+    </ul>
+    
+    <h3>🔹 Дополнительные важные темы</h3>
+    <ul>
+        <li>Форматирование строк: <code>String.format("0x%02X", value)</code></li>
+        <li>Диалоговые окна: <code>JOptionPane.showMessageDialog</code></li>
+        <li>Интерфейсы и реализация (<code>implements SerialPortEventListener</code>)</li>
+        <li>Логирование через <code>System.out.println</code> и <code>java.util.logging</code></li>
+    </ul>
+    
+    <div class="topic-grid">
+        <div class="topic-card">📌 Анонимные классы (new ActionListener() {...})</div>
+        <div class="topic-card">📌 Битовые сдвиги для упаковки чисел</div>
+        <div class="topic-card">📌 try-with-resources (не использован, но полезно)</div>
+        <div class="topic-card">📌 Дебаггинг в NetBeans (точки останова)</div>
+    </div>
+    
+    <h2>🧭 Пример: как отличить автоматическое от ручного (фрагмент кода)</h2>
+    <div class="code-block">
+// ---- АВТОМАТИЧЕСКИ сгенерировано (часть initComponents) ----
+private void initComponents() {
+    statusLabel = new javax.swing.JLabel();
+    jPanel1 = new javax.swing.JPanel();
+    serialPortButton = new javax.swing.JButton();
+    serialPortButton.setText("Применить");
+    serialPortButton.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            serialPortButtonActionPerformed(evt);   // ← заготовка, тело пустое
+        }
+    });
+    // ... расположение компонентов (GroupLayout)
+}
+
+// ---- НАПИСАНО ВРУЧНУЮ (реализация обработчика) ----
+private void serialPortButtonActionPerformed(java.awt.event.ActionEvent evt) {                                                 
+    if ( serialPortReady ){
+        serialPortInitialize();   // ← логика открытия порта
+    }
+}  
+
+// ---- ЕЩЁ РУЧНОЙ МЕТОД: разбор входящих данных ----
+@Override
+public void serialEvent(SerialPortEvent spe) {
+    // анализ буфера, выделение пакетов, обновление distTextField1..4, rssi...
+}
+    </div>
+    
+    <h2>🚀 Что делать, чтобы научиться писать такое самому?</h2>
+    <ol>
+        <li><strong>Создайте простое Swing-окно</strong> с кнопкой и текстовым полем в NetBeans (перетаскиванием). Посмотрите, как меняется код в <code>initComponents</code>. </li>
+        <li><strong>Напишите консольное приложение</strong>, которое открывает COM-порт через JSSC и выводит сырые байты в консоль (без GUI). Подключите реальное устройство или используйте виртуальный COM-порт (com0com).</li>
+        <li><strong>Освойте побитовые операции</strong>: возьмите массив байтов и соберите из них int, short, выделите биты.</li>
+        <li><strong>Изучите пример готового протокола</strong> (как здесь: стартовый байт, длина, тип, данные, контрольная сумма). Повторите парсинг в отдельном методе.</li>
+        <li><strong>Соедините всё вместе</strong>: добавьте в Swing-форму логику порта, показывайте данные в реальном времени.</li>
+        <li><strong>Добавьте таймер</strong> для статистики, лог в файл и обработку закрытия окна.</li>
+    </ol>
+    <p>После этого вы сможете не только понимать текущий код, но и адаптировать его под любые устройства, работающие по UART.</p>
+    
+    <hr>
+    <h2>🎯 Итог: что было автоматически, а что руками?</h2>
+    <ul>
+        <li>✅ <strong>Автоматически:</strong> расположение кнопок, полей, цвет, размеры, имена компонентов, начальный код <code>initComponents</code>, пустые заготовки обработчиков.</li>
+        <li>✍️ <strong>Руками:</strong> вся бизнес-логика (работа с портом, разбор пакетов, отправка команд, таймер, лог, инициализация полей <code>serialPortReady, regMode, logWriter</code> и пр.), импорты, реализация <code>SerialPortEventListener</code>, конструктор (дополненный), закрытие ресурсов.</li>
+    </ul>
+    <p>Этот баланс — типичный пример профессиональной Java-разработки: <strong>IDE ускоряет создание GUI</strong>, а программист пишет алгоритмы, интеграцию с железом и обработку событий.</p>
+    
+    <footer>
+        ⚡ Создано на основе реального кода проекта Uavrng (радиодальномер, COM-порт, протокол).<br>
+        Изучайте, экспериментируйте и создавайте свои устройства с Java!
+    </footer>
+</div>
+</body>
+</html>
