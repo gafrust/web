@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Блок-схема системы управления UART + CRC</title>
+    <!-- Подключаем Mermaid.js с CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .description {
+            background: #eef5ff;
+            border-left: 6px solid #2980b9;
+            padding: 16px 24px;
+            margin: 24px 0;
+            border-radius: 8px;
+            line-height: 1.7;
+        }
+        .mermaid-container {
+            background: #fafcff;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #dce5f0;
+            overflow-x: auto;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8fafc;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid #d0d9e8;
+        }
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        .footer {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-top: 30px;
+            border-top: 1px solid #e0e6ed;
+            padding-top: 20px;
+        }
+        @media (max-width: 768px) {
+            .container { padding: 16px; }
+            .legend { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔷 Архитектура системы управления UART с проверкой CRC</h1>
+
+    <div class="description">
+        <h3>📌 Описание работы</h3>
+        <ul>
+            <li><strong>Процессор (AXI-мастер)</strong> управляет модулем через регистры BRAM: включает питание, задаёт ожидаемое CRC и запускает автоматический процесс.</li>
+            <li><strong>Модуль BRAM-интерфейса</strong> (<code>bram_interface_urr</code>) декодирует адреса и выдаёт управляющие сигналы (<code>module_enable</code>, <code>start_crc</code>, <code>expected_crc</code>), а также сохраняет результаты (<code>crc_result</code>, <code>crc_done</code>, <code>crc_match</code>).</li>
+            <li><strong>Топ-модуль</strong> (<code>uart_top</code>) содержит два параллельных контроллера: <code>urr</code> (обычный режим) и <code>urr_crc</code> (автоматический режим с отправкой 50 команд, сбором данных, вычислением CRC и проверкой через команду 0xFF).</li>
+            <li><strong>Мультиплексоры</strong> переключают управление между BRAM и <code>urr_crc</code> во время работы CRC-процесса, а также маскируют сигнал <code>rx_valid</code> для <code>urr</code>, чтобы избежать конфликтов.</li>
+            <li><strong>UART-модули</strong> (<code>uart_tx</code>, <code>uart_rx</code>) обеспечивают физический обмен на скорости 115200 бод с чётным паритетом.</li>
+            <li><strong>Внутренние компоненты <code>urr_crc</code></strong> – FIFO на 200 байт и аппаратный модуль CRC32 – выполняют вычисление контрольной суммы по собранным данным.</li>
+        </ul>
+        <p>После завершения процесса сигнал <code>crc_done</code> становится активным, а в статусном регистре (адрес <code>0x1C</code>) бит 1 указывает на совпадение принятого CRC с ожидаемым.</p>
+    </div>
+
+    <div class="legend">
+        <span class="legend-item"><span class="color-box" style="background:#f9f;"></span> Внешние устройства</span>
+        <span class="legend-item"><span class="color-box" style="background:#bbf;"></span> BRAM-интерфейс</span>
+        <span class="legend-item"><span class="color-box" style="background:#bfb;"></span> Автоматический режим (urr_crc)</span>
+        <span class="legend-item"><span class="color-box" style="background:#ffb;"></span> Обычный режим (urr)</span>
+        <span class="legend-item"><span class="color-box" style="background:#ddd;"></span> Мультиплексоры / маскировка</span>
+    </div>
+
+    <div class="mermaid-container">
+        <pre class="mermaid">
+            flowchart TD
+                subgraph external["Внешние устройства"]
+                    CPU["AXI-мастер / Процессор"]
+                    UART_PINS["UART пины: tx, rx"]
+                end
+
+                subgraph top["Топ-модуль uart_top"]
+                    AXI["AXI BRAM интерфейс<br>axi_en_i, axi_data_i, ..."]
+                    BRAM["bram_interface_urr"]
+                    MUX_START{"Мультиплексор<br>start/cmd"}
+                    MUX_RX{"Маскировка rx_valid<br>для urr"}
+                    URR["urr<br>обычный режим"]
+                    URR_CRC["urr_crc<br>автоматический режим"]
+                    TX["uart_tx"]
+                    RX["uart_rx"]
+                    FIFO["FIFO 200 байт"]
+                    CRC_MOD["CRC-модуль"]
+                end
+
+                CPU -->|"запись/чтение регистров"| AXI
+                AXI --> BRAM
+
+                BRAM -->|"module_enable"| MUX_START
+                BRAM -->|"start_crc"| URR_CRC
+                BRAM -->|"expected_crc"| URR_CRC
+                URR_CRC -->|"crc_result, crc_done, crc_match"| BRAM
+
+                BRAM -->|"start_bram, cmd_bram"| MUX_START
+                URR_CRC -->|"start_urr, cmd_urr"| MUX_START
+                MUX_START -->|"start, cmd"| URR
+
+                URR -->|"tx_start, tx_data"| TX
+                RX -->|"rx_valid, rx_data, rx_error"| MUX_RX
+                MUX_RX -->|"rx_valid_to_urr, ..."| URR
+                RX -->|"rx_valid, rx_data, rx_error"| URR_CRC
+
+                TX -->|"tx"| UART_PINS
+                UART_PINS -->|"rx"| RX
+
+                URR_CRC -.->|"управление чтением"| FIFO
+                URR_CRC -.->|"вычисление"| CRC_MOD
+
+                style CPU fill:#f9f,stroke:#333
+                style BRAM fill:#bbf,stroke:#333
+                style URR_CRC fill:#bfb,stroke:#333
+                style URR fill:#ffb,stroke:#333
+                style MUX_START fill:#ddd,stroke:#333
+                style MUX_RX fill:#ddd,stroke:#333
+        </pre>
+    </div>
+
+    <div class="description" style="background:#f8f9fa; border-left-color:#27ae60;">
+        <h3>⚙️ Порядок работы (краткий сценарий)</h3>
+        <ol>
+            <li>Процессор записывает <code>module_enable = 1</code> в регистр <code>0x00</code>.</li>
+            <li>Записывает ожидаемое CRC в регистр <code>0x24</code>.</li>
+            <li>Записывает любое значение в <code>0x20</code> – это генерирует импульс <code>start_crc</code> и запускает <code>urr_crc</code>.</li>
+            <li><code>urr_crc</code> автоматически:
+                <ul>
+                    <li>Отправляет команды 1..50, собирает ответы (200 байт) в FIFO.</li>
+                    <li>Читает FIFO и вычисляет CRC.</li>
+                    <li>Отправляет команду 0xFF и получает 4 байта (готовое CRC).</li>
+                    <li>Сравнивает вычисленное (инвертированное) CRC с принятым и устанавливает <code>crc_match</code>.</li>
+                </ul>
+            </li>
+            <li>По завершении сигнал <code>crc_done</code> становится 1, результат CRC доступен в <code>0x14</code>, а статус (включая совпадение) – в <code>0x1C</code>.</li>
+        </ol>
+    </div>
+
+    <div class="footer">
+        Схема построена с использованием Mermaid.js &bull; Версия от 2026-08-11
+    </div>
+</div>
+
+<script>
+    // Инициализация Mermaid с дополнительными настройками для лучшего отображения
+    mermaid.initialize({
+        theme: 'base',
+        themeVariables: {
+            background: '#ffffff',
+            primaryColor: '#e8f0fe',
+            primaryBorderColor: '#3b7fc9',
+            primaryTextColor: '#1a1a2e',
+            lineColor: '#4a6fa5',
+            secondaryColor: '#f0f4ff',
+            tertiaryColor: '#f9f9ff'
+        },
+        flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true,
+            curve: 'basis',
+            padding: 15
+        },
+        securityLevel: 'loose'
+    });
+</script>
+
+</body>
+</html>
