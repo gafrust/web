@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Инструкция: генерация нетлиста в Vivado (UART проект)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 20px;
+            color: #2c3e50;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px 40px;
+        }
+        h1 {
+            color: #1a237e;
+            border-bottom: 4px solid #1a237e;
+            padding-bottom: 12px;
+            margin-top: 0;
+        }
+        h2 {
+            color: #283593;
+            margin-top: 30px;
+            border-left: 6px solid #283593;
+            padding-left: 15px;
+        }
+        h3 {
+            color: #3949ab;
+            margin-top: 20px;
+        }
+        code, pre {
+            background: #e8eaf6;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        code {
+            padding: 2px 6px;
+            background: #e8eaf6;
+            color: #1a237e;
+        }
+        pre {
+            padding: 16px 20px;
+            overflow-x: auto;
+            border-left: 4px solid #3f51b5;
+            background: #f0f2f8;
+            line-height: 1.5;
+        }
+        .note {
+            background: #fff8e1;
+            border-left: 6px solid #ffc107;
+            padding: 12px 18px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .warning {
+            background: #ffebee;
+            border-left: 6px solid #f44336;
+            padding: 12px 18px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #e8f5e9;
+            border-left: 6px solid #4caf50;
+            padding: 12px 18px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #cfd8dc;
+            padding: 10px 14px;
+            text-align: left;
+        }
+        th {
+            background: #e3f2fd;
+            font-weight: 600;
+        }
+        .file-path {
+            background: #eceff1;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 0.9rem;
+            color: #78909c;
+            border-top: 1px solid #cfd8dc;
+            padding-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+<h1>📁 Генерация нетлиста Vivado для модуля <code>uart_top</code></h1>
+<p><strong>Цель:</strong> создать функциональный Verilog нетлист (для симуляции в ModelSim) из RTL-исходников проекта UART с сохранением атрибутов <code>IOB</code> и <code>DONT_TOUCH</code>.</p>
+
+<h2>1. Структура папок проекта</h2>
+<pre>
+/home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/URR3/3_fifo/URR/
+├── rtl/                          # исходные RTL файлы (.v, .sv)
+│   ├── uart_top.v
+│   ├── uart_tx.v
+│   ├── uart_rx.v
+│   ├── bram_interface_urr.v
+│   ├── urr_crc.v
+│   ├── urr.v
+│   ├── fifo_200.v
+│   ├── crc_wrapper.v
+│   └── crc_module.v
+├── sim_syn/                      # папка для синтеза и нетлиста
+│   ├── viv_uart_top.tcl         # основной скрипт
+│   ├── verilog/                  # выходные нетлисты
+│   │   └── uart_top.v
+│   ├── uart_top.dcp             # checkpoint после синтеза
+│   └── uart_top-routed.dcp      # checkpoint после трассировки
+</pre>
+
+<h2>2. Содержимое скрипта <code>viv_uart_top.tcl</code></h2>
+<p>Скрипт выполняет полный цикл: создание проекта, добавление файлов, синтез, оптимизация, размещение, трассировка и генерация нетлиста.</p>
+
+<pre>
+# ============================================================
+# Скрипт синтеза и генерации нетлиста для модуля uart_top
+# Платформа: xc7a35tftg256-1, Vivado 2023.2
+# ============================================================
+
+set partname xc7a35tftg256-1
+set module uart_top
+
+# Создаём проект в текущей папке (силовая перезапись)
+create_project -force $module . -part $partname
+
+# Добавляем все RTL-файлы из папки ../rtl
+add_files [glob ../rtl/*.v ../rtl/*.sv]
+
+# Запускаем синтез
+synth_design -top $module -part $partname
+
+# Сохраняем checkpoint после синтеза (опционально)
+write_checkpoint -force -noxdef $module.dcp
+
+# ------ Полный маршрут (оптимизация, размещение, трассировка) ------
+opt_design
+place_design
+phys_opt_design
+route_design
+
+# Сохраняем routed checkpoint
+write_checkpoint -force $module-routed.dcp
+
+# ------ Генерация нетлиста для симуляции (функциональный) ------
+write_verilog -force ./verilog/$module.v
+
+# Закрыть проект (чтобы не засорять память)
+close_project
+
+puts "=== Генерация нетлиста завершена. Файл: ./verilog/$module.v ==="
+</pre>
+
+<h3>Пояснения по командам:</h3>
+<table>
+<tr><th>Команда</th><th>Назначение</th></tr>
+<tr><td><code>create_project -force</code></td><td>Создаёт проект, перезаписывая существующий (удобно при повторных запусках).</td></tr>
+<tr><td><code>add_files [glob ...]</code></td><td>Добавляет все Verilog и SystemVerilog файлы из папки <code>../rtl</code>.</td></tr>
+<tr><td><code>synth_design</code></td><td>Запускает синтез с указанным топ-модулем и микросхемой.</td></tr>
+<tr><td><code>write_checkpoint</code></td><td>Сохраняет промежуточное состояние дизайна (можно открыть позже в Vivado).</td></tr>
+<tr><td><code>opt_design / place_design / phys_opt_design / route_design</code></td><td>Полный маршрут реализации (для получения корректного нетлиста с учётом размещения).</td></tr>
+<tr><td><code>write_verilog -force</code></td><td>Генерирует нетлист в формате Verilog; <code>-force</code> перезаписывает существующий файл.</td></tr>
+</table>
+
+<h2>3. Запуск скрипта</h2>
+<ol>
+<li>Откройте терминал и перейдите в папку <code>sim_syn</code>:
+<pre>cd /home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/URR3/3_fifo/URR/sim_syn</pre>
+</li>
+<li>Запустите Vivado в пакетном режиме с указанием скрипта:
+<pre>vivado -source viv_uart_top.tcl -mode batch</pre>
+</li>
+<li>Если требуется сохранить логи, можно перенаправить вывод:
+<pre>vivado -source viv_uart_top.tcl -mode batch | tee vivado.log</pre>
+</li>
+</ol>
+
+<h2>4. Что делать при ошибках</h2>
+
+<div class="note">
+<strong>Ошибка 1: «Project already exists»</strong><br>
+Добавьте флаг <code>-force</code> в команду <code>create_project</code> (как в скрипте выше). Либо удалите старый проект вручную: <code>rm -rf uart_top.xpr uart_top.cache uart_top.hw uart_top.ip_user_files</code>.
+</div>
+
+<div class="warning">
+<strong>Ошибка 2: «no clock signal specified in event control»</strong><br>
+Возникает, если в always-блоке используется <code>posedge rst</code> и внутри <code>if (!rst)</code>. Решение – перейти на синхронный сброс (только <code>posedge clk</code>, внутри <code>if (rst)</code>). Пример исправления для FIFO и <code>bram_interface_urr</code> дан в описании.
+</div>
+
+<div class="warning">
+<strong>Ошибка 3: «width mismatch» для порта count в FIFO</strong><br>
+В <code>urr_crc.v</code> порт <code>count</code> имеет ширину 8 бит, а модуль <code>fifo</code> возвращает 9 бит. Для устранения объявите <code>wire [8:0] fifo_count;</code> и подключите его. Но это не критично для синтеза – Vivado выдаёт предупреждение, но не ошибку.
+</div>
+
+<div class="success">
+<strong>Успешное завершение</strong> – в логе должны отсутствовать ошибки, а в конце появится сообщение <em>«Генерация нетлиста завершена»</em>.
+</div>
+
+<h2>5. Где искать результат</h2>
+<ul>
+<li><strong>Нетлист:</strong> <span class="file-path">./verilog/uart_top.v</span></li>
+<li><strong>Checkpoint синтеза:</strong> <span class="file-path">./uart_top.dcp</span></li>
+<li><strong>Checkpoint после трассировки:</strong> <span class="file-path">./uart_top-routed.dcp</span></li>
+<li><strong>Лог выполнения:</strong> <span class="file-path">vivado.log</span> (если использовали перенаправление)</li>
+</ul>
+
+<h2>6. Как адаптировать скрипт для другого модуля</h2>
+<ol>
+<li>Измените переменные в начале скрипта:
+<pre>set partname &lt;ваша_микросхема&gt;
+set module &lt;имя_топ_модуля&gt;</pre>
+</li>
+<li>Убедитесь, что все исходные файлы лежат в папке, указанной в <code>add_files</code>. При необходимости измените путь.</li>
+<li>Если есть IP-ядра, их нужно добавить отдельно командой <code>add_files</code> с путём к DCP-файлу или через <code>import_ip</code>.</li>
+<li>Если XDC-файл обязателен, раскомментируйте строку <code>add_files ../xdc.xdc</code> и укажите правильный путь.</li>
+</ol>
+
+<h2>7. Дополнительные возможности</h2>
+<ul>
+<li><strong>Генерация только после синтеза</strong> (быстрее, но без учёта размещения): закомментируйте строки с <code>opt_design</code> … <code>route_design</code> и переместите <code>write_verilog</code> сразу после <code>synth_design</code>.</li>
+<li><strong>Отчёты по ресурсам и таймингу</strong> – добавьте в конец скрипта:
+<pre>report_utilization -file $module-util.txt
+report_timing_summary -file $module-timing.txt</pre>
+</li>
+<li><strong>Сохранение нетлиста с таймингами</strong> – замените <code>write_verilog</code> на <code>write_verilog -mode timesim -force ./verilog/$module_timesim.v</code>.</li>
+</ul>
+
+<h2>8. Краткая памятка по командам</h2>
+<table>
+<tr><th>Действие</th><th>Команда</th></tr>
+<tr><td>Запуск скрипта</td><td><code>vivado -source viv_uart_top.tcl -mode batch</code></td></tr>
+<tr><td>Открыть checkpoint в GUI</td><td><code>open_checkpoint uart_top-routed.dcp</code></td></tr>
+<tr><td>Просмотр utilisation</td><td><code>report_utilization</code> (после открытия дизайна)</td></tr>
+<tr><td>Просмотр таймингов</td><td><code>report_timing_summary</code></td></tr>
+</table>
+
+<div class="note">
+<strong>Важно:</strong> Скрипт использует относительные пути. Если вы переместите папку <code>sim_syn</code>, убедитесь, что пути к RTL-файлам (<code>../rtl</code>) остаются корректными.
+</div>
+
+<h2>9. Пример успешного вывода</h2>
+<pre>
+source viv_uart_top.tcl
+...
+Synthesis finished with 0 errors, 0 critical warnings and 90 warnings.
+opt_design completed successfully
+place_design completed successfully
+phys_opt_design completed successfully
+route_design completed successfully
+write_verilog -force ./verilog/uart_top.v
+close_project
+=== Генерация нетлиста завершена. Файл: ./verilog/uart_top.v ===
+INFO: [Common 17-206] Exiting Vivado at Wed Aug 12 18:30:38 2026...
+</pre>
+
+<h2>10. Часто задаваемые вопросы</h2>
+<dl>
+<dt><strong>Нужно ли запускать synthesis через GUI, чтобы получить нетлист?</strong></dt>
+<dd>Нет, скрипт делает всё автоматически. Результат – готовый файл <code>.v</code>.</dd>
+
+<dt><strong>Можно ли использовать этот нетлист в ModelSim?</strong></dt>
+<dd>Да, это стандартный функциональный нетлист, совместимый с симуляторами.</dd>
+
+<dt><strong>Атрибуты <code>IOB</code> и <code>DONT_TOUCH</code> сохраняются?</strong></dt>
+<dd>Да, Vivado переносит все <code>(* ... *)</code> атрибуты из RTL в нетлист.</dd>
+
+<dt><strong>Что делать, если синтез падает с ошибкой «Project already exists»?</strong></dt>
+<dd>Используйте <code>-force</code> в <code>create_project</code> или удалите старый проект вручную.</dd>
+</dl>
+
+<div class="footer">
+    Инструкция составлена 12 августа 2026 г. для Vivado 2023.2.<br>
+    При возникновении вопросов – обращайтесь к документации Xilinx или к вашему техническому специалисту.
+</div>
+
+</div>
+</body>
+</html>
