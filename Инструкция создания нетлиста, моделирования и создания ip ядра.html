@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UART FPGA — Инструкция</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+    <style>
+        /* ── Reset & Base ── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f6f8fc;
+            color: #1e293b;
+            padding: 2rem 1rem;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 32px;
+            box-shadow: 0 20px 60px rgba(0, 20, 50, 0.08);
+            padding: 2.5rem 2.8rem;
+            transition: all 0.2s;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+        }
+
+        .header-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #0f172a, #334155);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header .badge {
+            margin-left: auto;
+            background: #eef2ff;
+            color: #4338ca;
+            padding: 0.4rem 1.2rem;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            border: 1px solid #c7d2fe;
+        }
+
+        /* ── Section ── */
+        .section {
+            margin-bottom: 2.8rem;
+        }
+
+        .section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 0.9rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e9edf4;
+        }
+
+        .section-title .step-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #1e293b;
+            color: #fff;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .section-title .emoji {
+            font-size: 1.3rem;
+        }
+
+        /* ── Path Cards ── */
+        .path-card {
+            background: #f8faff;
+            border-radius: 16px;
+            padding: 0.9rem 1.4rem;
+            margin-bottom: 0.8rem;
+            border: 1px solid #eef2f8;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            transition: border 0.2s;
+        }
+
+        .path-card:hover {
+            border-color: #b9c8f0;
+        }
+
+        .path-label {
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            background: #e9edf4;
+            padding: 0.2rem 0.8rem;
+            border-radius: 100px;
+            white-space: nowrap;
+        }
+
+        .path-value {
+            font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #1e293b;
+            background: #ffffff;
+            padding: 0.25rem 0.9rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            word-break: break-all;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .path-value .highlight {
+            background: #dbeafe;
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+            color: #1d4ed8;
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 8px;
+            transition: background 0.15s, transform 0.1s;
+            color: #64748b;
+            flex-shrink: 0;
+        }
+
+        .copy-btn:hover {
+            background: #e9edf4;
+            color: #0f172a;
+        }
+
+        .copy-btn:active {
+            transform: scale(0.92);
+        }
+
+        .copy-btn.copied {
+            color: #16a34a;
+        }
+
+        /* ── Command Blocks ── */
+        .cmd-block {
+            background: #0f172a;
+            border-radius: 16px;
+            padding: 1rem 1.5rem;
+            margin: 0.8rem 0 0.4rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            border: 1px solid #1e293b;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .cmd-block .prompt {
+            color: #94a3b8;
+            font-family: 'SF Mono', 'Menlo', monospace;
+            font-size: 0.8rem;
+            font-weight: 500;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .cmd-block .cmd {
+            font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #e2e8f0;
+            word-break: break-all;
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .cmd-block .cmd .arg {
+            color: #fcd34d;
+        }
+
+        .cmd-block .cmd .path-arg {
+            color: #6ee7b7;
+        }
+
+        .cmd-block .cmd .flag {
+            color: #93c5fd;
+        }
+
+        .cmd-block .copy-btn {
+            color: #94a3b8;
+        }
+
+        .cmd-block .copy-btn:hover {
+            color: #f1f5f9;
+            background: #1e293b;
+        }
+
+        /* ── Note / hint ── */
+        .hint {
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 0.7rem 1.2rem;
+            font-size: 0.9rem;
+            color: #334155;
+            margin-top: 0.5rem;
+            border-left: 4px solid #94a3b8;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+        }
+
+        .hint .icon {
+            font-size: 1.2rem;
+            line-height: 1.4;
+        }
+
+        .hint strong {
+            color: #0f172a;
+        }
+
+        /* ── Two‑column folder grid ── */
+        .folder-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 0.8rem 0 0.4rem 0;
+        }
+
+        @media (max-width: 720px) {
+            .folder-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .folder-item {
+            background: #f8faff;
+            border-radius: 14px;
+            padding: 0.8rem 1.2rem;
+            border: 1px solid #eef2f8;
+            transition: border 0.2s;
+        }
+
+        .folder-item:hover {
+            border-color: #c7d2fe;
+        }
+
+        .folder-item .label {
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #475569;
+            letter-spacing: 0.3px;
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .folder-item .path {
+            font-family: 'SF Mono', 'Menlo', monospace;
+            font-size: 0.85rem;
+            color: #1e293b;
+            word-break: break-all;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .container {
+                padding: 1.5rem 1.2rem;
+                border-radius: 24px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .header .badge {
+                margin-left: 0;
+                width: 100%;
+                text-align: center;
+            }
+
+            .path-card {
+                padding: 0.7rem 1rem;
+            }
+
+            .cmd-block {
+                padding: 0.8rem 1rem;
+            }
+
+            .cmd-block .cmd {
+                font-size: 0.8rem;
+            }
+
+            .section-title {
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 0.8rem;
+            }
+
+            .container {
+                padding: 1.2rem 0.8rem;
+            }
+
+            .path-value {
+                font-size: 0.75rem;
+                padding: 0.2rem 0.6rem;
+            }
+        }
+
+        /* ── Scrollbar (optional) ── */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* ── Divider ── */
+        .divider {
+            border: none;
+            height: 1px;
+            background: linear-gradient(to right, #e2e8f0, transparent);
+            margin: 2.2rem 0;
+        }
+
+        /* small extra spacing */
+        .mt-1 {
+            margin-top: 0.3rem;
+        }
+        .mb-1 {
+            margin-bottom: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- ═══ HEADER ═══ -->
+        <div class="header">
+            <div class="header-icon">⚙</div>
+            <h1>UART · FPGA workflow</h1>
+            <span class="badge">инструкция</span>
+        </div>
+
+        <!-- ═══ STEP 1 ═══ -->
+        <div class="section">
+            <div class="section-title">
+                <span class="step-num">1</span>
+                <span class="emoji">📂</span>
+                Рабочие папки
+            </div>
+
+            <div class="folder-grid">
+                <div class="folder-item">
+                    <span class="label">📁 GitHub (исходники)</span>
+                    <span class="path">/home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/URR2/github/uart_urr</span>
+                </div>
+                <div class="folder-item">
+                    <span class="label">🧪 Поведенческое моделирование</span>
+                    <span class="path">/home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/URR3/3_fifo/URR/sim</span>
+                </div>
+                <div class="folder-item">
+                    <span class="label">🔬 Моделирование после синтеза</span>
+                    <span class="path">/home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/URR3/3_fifo/URR/sim_syn</span>
+                </div>
+                <div class="folder-item">
+                    <span class="label">🧬 RTL код</span>
+                    <span class="path">/home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/URR3/3_fifo/URR/rtl</span>
+                </div>
+            </div>
+        </div>
+
+        <hr class="divider" />
+
+        <!-- ═══ STEP 2 ═══ -->
+        <div class="section">
+            <div class="section-title">
+                <span class="step-num">2</span>
+                <span class="emoji">⚡</span>
+                Создание нетлиста (синтез)
+            </div>
+
+            <div class="path-card">
+                <span class="path-label">Вход</span>
+                <span class="path-value">/home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/URR3/3_fifo/URR/sim_syn</span>
+            </div>
+
+            <div class="cmd-block">
+                <span class="prompt">$</span>
+                <span class="cmd">
+                    vivado <span class="flag">-source</span> viv_uart_top.tcl <span class="flag">-mode</span> batch
+                </span>
+                <button class="copy-btn" data-copy="vivado -source viv_uart_top.tcl -mode batch" title="Копировать команду">📋</button>
+            </div>
+
+            <div class="hint">
+                <span class="icon">📌</span>
+                <span>Нетлист <strong>uart_top_netlist.v</strong> создаётся в папке <code>/home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/URR3/3_fifo/URR/sim_syn/verilog/</code></span>
+            </div>
+        </div>
+
+        <!-- ═══ STEP 3 ═══ -->
+        <div class="section">
+            <div class="section-title">
+                <span class="step-num">3</span>
+                <span class="emoji">📦</span>
+                Перенос нетлиста &amp; моделирование
+            </div>
+
+            <div class="path-card">
+                <span class="path-label">Из</span>
+                <span class="path-value">/home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/URR3/3_fifo/URR/sim_syn/verilog/ <span class="highlight">uart_top_netlist.v</span></span>
+            </div>
+
+            <div class="path-card">
+                <span class="path-label">В</span>
+                <span class="path-value">/home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/URR3/3_fifo/URR/rtl/</span>
+            </div>
+
+            <div class="cmd-block">
+                <span class="prompt">$</span>
+                <span class="cmd">
+                    ./do_vsim.sh
+                </span>
+                <button class="copy-btn" data-copy="./do_vsim.sh" title="Копировать команду">📋</button>
+            </div>
+
+            <div class="hint">
+                <span class="icon">▶</span>
+                <span>Запускайте из папки <code>rgafurov@NPO140:~/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/URR3/3_fifo/URR/sim_syn$</code></span>
+            </div>
+        </div>
+
+        <hr class="divider" />
+
+        <!-- ═══ STEP 4 ═══ -->
+        <div class="section">
+            <div class="section-title">
+                <span class="step-num">4</span>
+                <span class="emoji">🧩</span>
+                Создание IP‑ядра из RTL
+            </div>
+
+            <div class="folder-grid">
+                <div class="folder-item">
+                    <span class="label">📁 Папка для IP‑ядра</span>
+                    <span class="path">/home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/Xilinx23_2/adc_pa_pravino_pokaz_ila_/uart_top</span>
+                </div>
+                <div class="folder-item">
+                    <span class="label">📁 RTL файлы (исходники для IP)</span>
+                    <span class="path">/home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/Xilinx23_2/adc_pa_pravino_pokaz_ila_/uart_top/rtl_dir</span>
+                </div>
+                <div class="folder-item">
+                    <span class="label">📁 Созданные файлы IP</span>
+                    <span class="path">/home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/Xilinx23_2/adc_pa_pravino_pokaz_ila_/uart_top/my_urr_ip</span>
+                </div>
+                <div class="folder-item">
+                    <span class="label">📁 IP в проекте MicroBlaze</span>
+                    <span class="path">/home/rgafurov/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/Xilinx23_2/microblaze_URR/test_microblaze/test_microblaze.ip_user_files/my_urr_ip</span>
+                </div>
+            </div>
+
+            <div class="cmd-block" style="margin-top: 0.8rem;">
+                <span class="prompt">$</span>
+                <span class="cmd">
+                    vivado <span class="flag">-source</span> made_ip_final.tcl <span class="flag">-mode</span> batch
+                </span>
+                <button class="copy-btn" data-copy="vivado -source made_ip_final.tcl -mode batch" title="Копировать команду">📋</button>
+            </div>
+
+            <div class="hint">
+                <span class="icon">📌</span>
+                <span>Запускайте из папки <code>rgafurov@NPO140:~/work/Praktika_FPGA/Rustem_Gafurov/Radiocomp/Xilinx23_2/adc_pa_pravino_pokaz_ila_/uart_top$</code></span>
+            </div>
+        </div>
+
+        <hr class="divider" />
+
+        <!-- ═══ QUICK REFERENCE ═══ -->
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">📋</span>
+                Быстрые команды
+            </div>
+
+            <div class="cmd-block">
+                <span class="prompt">#</span>
+                <span class="cmd" style="color:#94a3b8; font-weight:400;">Синтез → нетлист</span>
+                <button class="copy-btn" data-copy="vivado -source viv_uart_top.tcl -mode batch" title="Копировать">📋</button>
+            </div>
+
+            <div class="cmd-block">
+                <span class="prompt">#</span>
+                <span class="cmd" style="color:#94a3b8; font-weight:400;">Моделирование с нетлистом</span>
+                <button class="copy-btn" data-copy="./do_vsim.sh" title="Копировать">📋</button>
+            </div>
+
+            <div class="cmd-block">
+                <span class="prompt">#</span>
+                <span class="cmd" style="color:#94a3b8; font-weight:400;">Сборка IP‑ядра</span>
+                <button class="copy-btn" data-copy="vivado -source made_ip_final.tcl -mode batch" title="Копировать">📋</button>
+            </div>
+
+            <div style="margin-top: 0.8rem; font-size: 0.85rem; color: #475569; background: #f1f5f9; border-radius: 12px; padding: 0.6rem 1.2rem;">
+                💡 <strong>Подсказка:</strong> нажмите на кнопку <span style="background:#e9edf4; padding:0.1rem 0.5rem; border-radius:6px;">📋</span> рядом с любой командой, чтобы скопировать её в буфер обмена.
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ═══ JavaScript (копирование) ═══ -->
+    <script>
+        (function() {
+            const copyButtons = document.querySelectorAll('.copy-btn');
+
+            copyButtons.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const text = this.getAttribute('data-copy');
+                    if (!text) return;
+
+                    // Копирование
+                    navigator.clipboard.writeText(text).then(() => {
+                        // Визуальный фидбек
+                        const original = this.textContent;
+                        this.textContent = '✅';
+                        this.classList.add('copied');
+
+                        setTimeout(() => {
+                            this.textContent = original;
+                            this.classList.remove('copied');
+                        }, 1600);
+                    }).catch(() => {
+                        // fallback
+                        const textarea = document.createElement('textarea');
+                        textarea.value = text;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        try {
+                            document.execCommand('copy');
+                            const original = this.textContent;
+                            this.textContent = '✅';
+                            this.classList.add('copied');
+                            setTimeout(() => {
+                                this.textContent = original;
+                                this.classList.remove('copied');
+                            }, 1600);
+                        } catch (err) {
+                            alert('Не удалось скопировать. Выделите команду вручную.');
+                        }
+                        document.body.removeChild(textarea);
+                    });
+                });
+            });
+        })();
+    </script>
+
+</body>
+</html>
