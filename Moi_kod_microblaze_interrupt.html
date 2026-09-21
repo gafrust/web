@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MicroBlaze INTC + URR: конспект и инструкция</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2230;
+    --panel2: #232d3f;
+    --text: #e6edf3;
+    --muted: #9aa7b8;
+    --accent: #4fc3f7;
+    --accent2: #ffb74d;
+    --green: #81c784;
+    --red: #e57373;
+    --code-bg: #0b1017;
+    --border: #2d3a4f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    font-size: 16px;
+  }
+  header {
+    background: linear-gradient(135deg, #1a2230, #0f1419);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 20px 30px;
+    text-align: center;
+  }
+  header h1 {
+    margin: 0 0 10px;
+    font-size: 2em;
+    color: var(--accent);
+  }
+  header p { color: var(--muted); margin: 0; }
+
+  nav.toc {
+    position: sticky;
+    top: 0;
+    background: rgba(15,20,25,0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    z-index: 100;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  nav.toc a {
+    color: var(--muted);
+    text-decoration: none;
+    margin-right: 18px;
+    font-size: 0.9em;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  nav.toc a:hover { color: var(--accent); background: var(--panel); }
+
+  main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 30px 20px 80px;
+  }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 25px 30px;
+    margin-bottom: 30px;
+  }
+  h2 {
+    color: var(--accent);
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 8px;
+    margin-top: 0;
+    font-size: 1.5em;
+  }
+  h3 {
+    color: var(--accent2);
+    margin-top: 28px;
+    font-size: 1.15em;
+  }
+  h4 {
+    color: var(--green);
+    margin-top: 20px;
+    font-size: 1em;
+  }
+  p { color: var(--text); }
+  code {
+    background: var(--code-bg);
+    color: var(--accent2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "Consolas", "Monaco", monospace;
+    font-size: 0.9em;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: "Consolas", "Monaco", monospace;
+    font-size: 0.88em;
+    line-height: 1.55;
+    color: #d4e0ed;
+  }
+  pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
+  }
+  .kw  { color: #c792ea; }  /* keywords */
+  .ty  { color: #82aaff; }  /* types */
+  .st  { color: #c3e88d; }  /* strings */
+  .cm  { color: #5f7e97; font-style: italic; }  /* comments */
+  .nm  { color: #f78c6c; }  /* numbers */
+  .fn  { color: #ffcb6b; }  /* functions */
+  .pp  { color: #f07178; }  /* preprocessor */
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.93em;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+  }
+  th {
+    background: var(--panel2);
+    color: var(--accent);
+  }
+  tr:nth-child(even) { background: rgba(35,45,63,0.4); }
+
+  .note, .warn, .tip {
+    border-left: 4px solid var(--accent);
+    background: rgba(79,195,247,0.08);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .warn {
+    border-color: var(--red);
+    background: rgba(229,115,115,0.08);
+  }
+  .tip {
+    border-color: var(--green);
+    background: rgba(129,199,132,0.08);
+  }
+  .note b, .warn b, .tip b { color: var(--accent); }
+  .warn b { color: var(--red); }
+  .tip b { color: var(--green); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; }
+    section { padding: 18px; }
+  }
+
+  .step {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+  .step-body { flex: 1; }
+  .step-body h4 { margin-top: 4px; }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.75em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--panel2);
+    color: var(--accent);
+    margin-right: 6px;
+  }
+  ul { padding-left: 22px; }
+  li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>MicroBlaze INTC + URR</h1>
+  <p>Конспект: синтаксис C, устройство контроллера прерываний и разбор вашего кода</p>
+</header>
+
+<nav class="toc">
+  <a href="#c-basics">1. Синтаксис C</a>
+  <a href="#bitfields">2. Битовые поля и union</a>
+  <a href="#preproc">3. Препроцессор</a>
+  <a href="#xintc">4. XIntc: архитектура</a>
+  <a href="#exception">5. Xil_Exception</a>
+  <a href="#code">6. Разбор вашего кода</a>
+  <a href="#setup">7. Настройка INTC</a>
+  <a href="#problems">8. Частые ошибки</a>
+</nav>
+
+<main>
+
+<!-- ============================================================ -->
+<section id="c-basics">
+  <h2>1. Синтаксис языка C, использованный в коде</h2>
+
+  <h3>1.1. Базовые типы с фиксированной шириной</h3>
+  <p>В встраиваемом коде используют типы из <code>&lt;stdint.h&gt;</code> — они гарантируют размер независимо от платформы.</p>
+
+  <table>
+    <tr><th>Тип</th><th>Размер</th><th>Диапазон</th><th>Где в вашем коде</th></tr>
+    <tr><td><code>uint8_t</code></td><td>1 байт</td><td>0…255</td><td>возврат <code>urr_check_crc()</code></td></tr>
+    <tr><td><code>uint32_t</code></td><td>4 байта</td><td>0…4 294 967 295</td><td><code>urr_irq_flag</code>, <code>freq_code</code></td></tr>
+    <tr><td><code>u8</code>, <code>u16</code>, <code>u32</code></td><td>1/2/4 байта</td><td>то же (Xilinx-алиасы)</td><td><code>XIntc_Enable(..., u8 Id)</code></td></tr>
+    <tr><td><code>UINTPTR</code></td><td>размер указателя</td><td>адрес</td><td><code>BaseAddress</code> в <code>XIntc_Config</code></td></tr>
+  </table>
+
+  <div class="tip">
+    <b>Совет:</b> в своём коде всегда используйте <code>uint32_t</code>/<code>uint8_t</code> из <code>stdint.h</code>, а не <code>int</code>/<code>char</code> — размер последних зависит от компилятора и архитектуры.
+  </div>
+
+  <h3>1.2. Указатели</h3>
+  <pre><code><span class="cm">/* Указатель на uint32_t */</span>
+<span class="ty">uint32_t</span> *freq_code;
+
+<span class="cm">/* Передача указателя в функцию — она сможет изменить значение */</span>
+<span class="ty">uint8_t</span> <span class="fn">urr_read_freqcode</span>(<span class="ty">uint32_t</span> *freq_code)
+{
+    *freq_code = <span class="fn">Xil_In32</span>(URR_RESULT) & <span class="nm">0x00FFFFFF</span>;
+    <span class="kw">return</span> <span class="nm">0</span>;
+}
+
+<span class="cm">/* Вызов: передаём адрес переменной через &amp; */</span>
+<span class="ty">uint32_t</span> code;
+<span class="fn">urr_read_freqcode</span>(&amp;code);   <span class="cm">// внутри *freq_code изменит code</span></code></pre>
+
+  <h3>1.3. Ключевое слово <code>volatile</code></h3>
+  <p>Говорит компилятору: «эта переменная может измениться в любой момент, не кэшируй её в регистре». Обязательно для переменных, которые меняются в прерываниях.</p>
+
+  <pre><code><span class="cm">/* Без volatile компилятор может решить,</span>
+<span class="cm">   что urr_irq_flag не меняется в цикле,</span>
+<span class="cm">   и превратить while в бесконечный */</span>
+<span class="kw">volatile</span> <span class="ty">uint32_t</span> urr_irq_flag = <span class="nm">0</span>;
+
+<span class="cm">/* В main: */</span>
+<span class="kw">while</span> (!urr_irq_flag &amp;&amp; timeout--) { ... }</code></pre>
+
+  <div class="warn">
+    <b>Важно:</b> все флаги, которые выставляются в ISR и читаются в <code>main()</code>, должны быть <code>volatile</code>. Иначе оптимизатор сломает логику.
+  </div>
+
+  <h3>1.4. Функции и прототипы</h3>
+  <pre><code><span class="cm">/* Прототип (объявление) — в .h */</span>
+<span class="ty">void</span> <span class="fn">urr_init</span>(<span class="ty">void</span>);
+<span class="ty">t_urr_tel</span> <span class="fn">urr_get_tel</span>(<span class="ty">void</span>);
+<span class="ty">uint8_t</span> <span class="fn">urr_read_freqcode</span>(<span class="ty">uint32_t</span> *freq_code);
+
+<span class="cm">/* Определение (реализация) — в .c */</span>
+<span class="ty">void</span> <span class="fn">urr_init</span>(<span class="ty">void</span>)
+{
+    <span class="fn">Xil_Out32</span>(URR_CTRL, <span class="nm">0x1</span>);
+}</code></pre>
+
+  <h3>1.5. Приведение типов (cast)</h3>
+  <pre><code><span class="cm">/* Приведение указателя на функцию к нужному типу */</span>
+<span class="fn">XIntc_Connect</span>(&amp;InterruptController,
+              XPAR_AXI_INTC_0_UART_TOP_0_IRQ_O_INTR,
+              (<span class="ty">XInterruptHandler</span>)urr_irq_handler,  <span class="cm">// cast</span>
+              <span class="nm">0</span>);</code></pre>
+
+  <h3>1.6. Циклы и условия</h3>
+  <pre><code><span class="cm">/* while с пост-декрементом: сначала проверка timeout != 0,</span>
+<span class="cm">   потом уменьшение. Когда timeout == 0 — выход */</span>
+<span class="ty">uint32_t</span> timeout = <span class="nm">100</span>;
+<span class="kw">while</span> (!urr_irq_flag &amp;&amp; timeout--) {
+    <span class="fn">usleep</span>(<span class="nm">1000</span>);   <span class="cm">// 1 мс</span>
+}
+
+<span class="cm">/* if / else if / else */</span>
+<span class="kw">if</span> (tel.connected &amp;&amp; tel.ready) {
+    <span class="cm">/* оба флага */</span>
+} <span class="kw">else</span> {
+    <span class="cm">/* хотя бы один = 0 */</span>
+}</code></pre>
+
+  <h3>1.7. Побитовые операции</h3>
+  <table>
+    <tr><th>Операция</th><th>Смысл</th><th>Пример из кода</th></tr>
+    <tr><td><code>&amp;</code></td><td>И (маскирование)</td><td><code>status &amp; 0x01</code> — проверить бит 0</td></tr>
+    <tr><td><code>|</code></td><td>ИЛИ (установка бит)</td><td><code>CurrentIER | Mask</code> — включить бит</td></tr>
+    <tr><td><code>~</code></td><td>НЕ (инверсия)</td><td><code>reg &amp; ~Mask</code> — сбросить бит</td></tr>
+    <tr><td><code>&lt;&lt;</code></td><td>сдвиг влево</td><td><code>1 &lt;&lt; Id</code> — маска для бита Id</td></tr>
+    <tr><td><code>&gt;&gt;</code></td><td>сдвиг вправо</td><td><code>value &gt;&gt; 8</code> — взять старший байт</td></tr>
+  </table>
+
+  <pre><code><span class="cm">/* Пример: собрать маску для Id = 5 */</span>
+<span class="ty">uint32_t</span> Mask = <span class="nm">1</span> &lt;&lt; <span class="nm">5</span>;   <span class="cm">// 0x00000020</span>
+
+<span class="cm">/* Из вашего XIntc_Enable: XIntc_BitPosMask[Id] — это 1 &lt;&lt; Id */</span>
+Mask = XIntc_BitPosMask[Id];</code></pre>
+</section>
+
+<!-- ============================================================ -->
+<section id="bitfields">
+  <h2>2. Битовые поля, union и <code>#pragma pack</code></h2>
+
+  <p>В <code>urr.h</code> структура телеметрии собрана из <b>битовых полей</b> внутри <b>union</b>:</p>
+
+  <pre><code><span class="pp">#pragma pack( push, 1 )</span>
+<span class="kw">typedef struct</span> {
+    <span class="kw">union</span> {
+        <span class="kw">struct</span> {
+            <span class="ty">uint32_t</span> connected :<span class="nm">1</span>;   <span class="cm">// бит 0</span>
+            <span class="ty">uint32_t</span> ready     :<span class="nm">1</span>;   <span class="cm">// бит 1</span>
+            <span class="ty">uint32_t</span> err_crc   :<span class="nm">1</span>;   <span class="cm">// бит 2</span>
+            <span class="ty">uint32_t</span> res       :<span class="nm">5</span>;   <span class="cm">// биты 3..7</span>
+        };
+        <span class="ty">uint8_t</span> value;             <span class="cm">// доступ ко всем 8 битам сразу</span>
+    };
+} t_urr_tel;
+<span class="pp">#pragma pack( pop )</span></code></pre>
+
+  <h3>Что это даёт</h3>
+  <ul>
+    <li><b>Битовые поля</b> (<code>connected :1</code>) позволяют обращаться к отдельным битам по имени.</li>
+    <li><b>union</b> накладывает <code>struct</code> и <code>value</code> на одну и ту же память: можно писать в поля по отдельности, а читать/передавать все 8 бит одним байтом.</li>
+    <li><b>Анонимный union</b> (без имени) — поля <code>connected</code>, <code>ready</code>, <code>value</code> доступны напрямую как <code>tel.connected</code>, <code>tel.value</code>.</li>
+    <li><code>#pragma pack(push, 1)</code> — убирает выравнивание, чтобы структура занимала ровно 1 байт (важно для передачи по шине/сети).</li>
+  </ul>
+
+  <pre><code><span class="cm">/* Использование в main.c */</span>
+<span class="ty">t_urr_tel</span> tel = <span class="fn">urr_get_tel</span>();
+
+<span class="fn">xil_printf</span>(<span class="st">"Tel: connected=%u ready=%u err_crc=%u (val=0x%02X)\r\n"</span>,
+           (<span class="ty">unsigned</span>)tel.connected,   <span class="cm">// доступ к биту</span>
+           (<span class="ty">unsigned</span>)tel.ready,
+           (<span class="ty">unsigned</span>)tel.err_crc,
+           (<span class="ty">unsigned</span>)tel.value);    <span class="cm">// весь байт</span></code></pre>
+
+  <div class="note">
+    <b>Порядок битов</b> в битовых полях зависит от компилятора (little-endian vs big-endian). На MicroBlaze (little-endian) <code>connected</code> — младший бит байта. Не полагайтесь на это при обмене с внешними устройствами без явной спецификации.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="preproc">
+  <h2>3. Препроцессор: <code>#define</code>, <code>#ifdef</code>, <code>#ifndef</code></h2>
+
+  <h3>3.1. Макросы-константы</h3>
+  <pre><code><span class="pp">#define</span> URR_BASE        XPAR_AXI_BRAM_CTRL_0_S_AXI_BASEADDR
+<span class="pp">#define</span> URR_CTRL        (URR_BASE + <span class="nm">0x00</span>)
+<span class="pp">#define</span> URR_CMD         (URR_BASE + <span class="nm">0x08</span>)
+<span class="pp">#define</span> UART_STATUS_DONE    <span class="nm">0x01</span>
+<span class="pp">#define</span> CRC_STATUS_MATCH    <span class="nm">0x02</span></code></pre>
+  <p>Препроцессор просто подставляет текст. <code>URR_CTRL</code> разворачивается в <code>(0xC0000000 + 0x00)</code>.</p>
+
+  <h3>3.2. Условная компиляция</h3>
+  <pre><code><span class="pp">#ifndef</span> SDT
+    <span class="ty">u16</span> DeviceId;
+<span class="pp">#else</span>
+    <span class="ty">char</span> *Name;
+<span class="pp">#endif</span></code></pre>
+  <p>Если макрос <code>SDT</code> не определён — компилируется первая ветка, иначе вторая. Так поддерживают две версии BSP (старую и System Device Tree).</p>
+
+  <h3>3.3. Защита заголовка (include guard)</h3>
+  <pre><code><span class="pp">#ifndef</span> URR_H
+<span class="pp">#define</span> URR_H
+
+<span class="cm">/* содержимое заголовка */</span>
+
+<span class="pp">#endif</span> <span class="cm">/* URR_H */</span></code></pre>
+  <p>Не даёт включить <code>urr.h</code> дважды — иначе будут ошибки «redefinition».</p>
+
+  <h3>3.4. Внешние переменные: <code>extern</code></h3>
+  <pre><code><span class="cm">/* urr.h — только объявление, память не выделяется */</span>
+<span class="kw">extern</span> <span class="kw">volatile</span> <span class="ty">uint32_t</span> urr_irq_flag;
+<span class="kw">extern</span> <span class="kw">volatile</span> <span class="ty">uint32_t</span> urr_connect_flag;
+
+<span class="cm">/* urr.c — определение, здесь выделяется память */</span>
+<span class="kw">volatile</span> <span class="ty">uint32_t</span> urr_irq_flag     = <span class="nm">0</span>;
+<span class="kw">volatile</span> <span class="ty">uint32_t</span> urr_connect_flag = <span class="nm">0</span>;</code></pre>
+  <p><code>extern</code> говорит: «переменная существует где-то в другом .c». Без него линкер выдаст «multiple definition».</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="xintc">
+  <h2>4. XIntc: устройство контроллера прерываний</h2>
+
+  <h3>4.1. Что такое AXI INTC</h3>
+  <p>Это аппаратный блок Xilinx, который собирает сигналы прерываний от периферии (у вас — от модуля URR) и передаёт их процессору MicroBlaze одним сигналом <code>IRQ</code>. Внутри — 32 входа (в каскаде — больше).</p>
+
+  <pre><code>URR (irq_o)     ──┐
+URR (irq_con_o) ──┤
+...             ──┼──► AXI INTC ──► MicroBlaze (IRQ)
+другие IP       ──┘</code></pre>
+
+  <h3>4.2. Ключевые регистры INTC</h3>
+  <table>
+    <tr><th>Регистр</th><th>Смещение</th><th>Назначение</th></tr>
+    <tr><td><code>ISR</code></td><td>0x00</td><td>Interrupt Status — какие прерывания сейчас pending</td></tr>
+    <tr><td><code>IPR</code></td><td>0x04</td><td>Interrupt Pending — pending, игнорируя маску</td></tr>
+    <tr><td><code>IER</code></td><td>0x08</td><td>Interrupt Enable — какие источники разрешены</td></tr>
+    <tr><td><code>IAR</code></td><td>0x0C</td><td>Acknowledge — сброс pending-бита</td></tr>
+    <tr><td><code>SIE</code></td><td>0x10</td><td>Set Enable — установить бит в IER</td></tr>
+    <tr><td><code>CIE</code></td><td>0x14</td><td>Clear Enable — сбросить бит в IER</td></tr>
+    <tr><td><code>MER</code></td><td>0x1C</td><td>Master Enable — общее разрешение контроллера</td></tr>
+  </table>
+
+  <h3>4.3. Структура <code>XIntc_Config</code></h3>
+  <p>Статическая конфигурация (генерируется Xilinx-тулами в <code>xintc_g.c</code>):</p>
+  <ul>
+    <li><code>DeviceId</code> / <code>Name</code> — ID или имя устройства</li>
+    <li><code>BaseAddress</code> — базовый адрес регистров</li>
+    <li><code>NumberofIntrs</code> — число входов</li>
+    <li><code>IntcType</code> — 0=no cascade, 1=primary, 2=secondary, 3=last</li>
+    <li><code>HandlerTable[]</code> — таблица обработчиков (по одному на вход)</li>
+  </ul>
+
+  <h3>4.4. Runtime-структура <code>XIntc</code></h3>
+  <pre><code><span class="kw">static</span> <span class="ty">XIntc</span> InterruptController;   <span class="cm">// в вашем main.c</span></code></pre>
+  <p>Хранит <code>CfgPtr</code> (указатель на конфигурацию), <code>IsReady</code>, <code>IsStarted</code> и т.п. Все вызовы <code>XIntc_*</code> работают именно с этим экземпляром.</p>
+
+  <h3>4.5. Жизненный цикл драйвера</h3>
+  <table>
+    <tr><th>Функция</th><th>Что делает</th></tr>
+    <tr><td><code>XIntc_Initialize()</code></td><td>Находит конфигурацию по DeviceId, обнуляет таблицу</td></tr>
+    <tr><td><code>XIntc_Connect()</code></td><td>Привязывает обработчик к источнику</td></tr>
+    <tr><td><code>XIntc_Start()</code></td><td>Пишет MER — включает контроллер (+ slave в каскаде)</td></tr>
+    <tr><td><code>XIntc_Enable()</code></td><td>Ставит бит в IER — разрешает конкретный источник</td></tr>
+    <tr><td><code>XIntc_Disable()</code></td><td>Сбрасывает бит в IER</td></tr>
+    <tr><td><code>XIntc_Acknowledge()</code></td><td>Пишет в IAR — сбрасывает pending</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section id="exception">
+  <h2>5. Xil_Exception: обработка исключений процессора</h2>
+
+  <p>Это отдельный уровень. INTC выдаёт сигнал на вход MicroBlaze, а <code>Xil_Exception</code> решает, какая функция вызовется при этом сигнале.</p>
+
+  <table>
+    <tr><th>Функция</th><th>Назначение</th></tr>
+    <tr><td><code>Xil_ExceptionInit()</code></td><td>Пустая заглушка (для совместимости)</td></tr>
+    <tr><td><code>Xil_ExceptionRegisterHandler()</code></td><td>Записать обработчик в <code>XExc_VectorTable[Id]</code></td></tr>
+    <tr><td><code>Xil_ExceptionEnable()</code></td><td>Установить биты EE/IE в MSR (MicroBlaze)</td></tr>
+    <tr><td><code>Xil_ExceptionDisable()</code></td><td>Сбросить EE/IE</td></tr>
+  </table>
+
+  <h3>5.1. Что происходит при IRQ</h3>
+  <ol>
+    <li>Процессор MicroBlaze принимает сигнал IRQ.</li>
+    <li>Аппаратно переходит на вектор исключения.</li>
+    <li>BSP-код смотрит <code>XExc_VectorTable[XIL_EXCEPTION_ID_INT].Handler</code>.</li>
+    <li>Вызывает его с аргументом <code>Data</code> — у вас это <code>&amp;InterruptController</code>.</li>
+    <li>Это <code>XIntc_InterruptHandler()</code> — он читает ISR, находит pending-биты и вызывает соответствующие обработчики из <code>HandlerTable</code>.</li>
+    <li>Ваш <code>urr_irq_handler()</code> выставляет <code>urr_irq_flag++</code>.</li>
+  </ol>
+
+  <pre><code>MicroBlaze IRQ
+    │
+    ▼
+XExc_VectorTable[XIL_EXCEPTION_ID_INT]
+    │
+    ▼
+XIntc_InterruptHandler(&amp;InterruptController)
+    │
+    ├── читает ISR
+    ├── для каждого pending бита:
+    │      HandlerTable[id].Handler(HandlerTable[id].CallBackRef)
+    │
+    ▼
+urr_irq_handler()  →  urr_irq_flag++</code></pre>
+</section>
+
+<!-- ============================================================ -->
+<section id="code">
+  <h2>6. Разбор вашего кода</h2>
+
+  <h3>6.1. <code>main.c</code> — последовательность инициализации</h3>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h4>Инициализация INTC</h4>
+      <pre><code>Status = <span class="fn">XIntc_Initialize</span>(&amp;InterruptController,
+                            XPAR_AXI_INTC_0_DEVICE_ID);
+<span class="kw">if</span> (Status != XST_SUCCESS) { ... }</code></pre>
+      <p>Находит конфигурацию по DeviceId, обнуляет <code>HandlerTable</code>, ставит <code>IsReady</code>.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h4>Подключение обработчиков</h4>
+      <pre><code><span class="fn">XIntc_Connect</span>(&amp;InterruptController,
+              XPAR_AXI_INTC_0_UART_TOP_0_IRQ_O_INTR,
+              (<span class="ty">XInterruptHandler</span>)urr_irq_handler, <span class="nm">0</span>);
+
+<span class="fn">XIntc_Connect</span>(&amp;InterruptController,
+              XPAR_AXI_INTC_0_UART_TOP_0_IRQ_CON_O_INTR,
+              (<span class="ty">XInterruptHandler</span>)urr_connect_handler, <span class="nm">0</span>);</code></pre>
+      <p>Заполняет <code>HandlerTable[id].Handler</code> для двух источников: <code>irq_o</code> (готовность кода) и <code>irq_con_o</code> (подключение). <code>CallBackRef = 0</code> — обработчики его не используют.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h4>Запуск контроллера и разрешение источников</h4>
+      <pre><code><span class="fn">XIntc_Start</span>(&amp;InterruptController, XIN_REAL_MODE);
+<span class="fn">XIntc_Enable</span>(&amp;InterruptController,
+             XPAR_AXI_INTC_0_UART_TOP_0_IRQ_O_INTR);
+<span class="fn">XIntc_Enable</span>(&amp;InterruptController,
+             XPAR_AXI_INTC_0_UART_TOP_0_IRQ_CON_O_INTR);</code></pre>
+      <p><code>Start</code> пишет MER (master + hardware enable). <code>Enable</code> ставит биты в IER для двух источников.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h4>Регистрация обработчика исключения процессора</h4>
+      <pre><code><span class="fn">Xil_ExceptionInit</span>();   <span class="cm">// no-op</span>
+<span class="fn">Xil_ExceptionRegisterHandler</span>(XIL_EXCEPTION_ID_INT,
+                             (<span class="ty">Xil_ExceptionHandler</span>)XIntc_InterruptHandler,
+                             &amp;InterruptController);</code></pre>
+      <p>Теперь при IRQ процессор вызовет <code>XIntc_InterruptHandler</code>, который «разгребёт» INTC.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <h4>Инициализация URR</h4>
+      <pre><code><span class="fn">urr_init</span>();   <span class="cm">// сбрасывает флаги, включает модуль (CTRL = 1)</span></code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-body">
+      <h4>Разрешение исключений процессора</h4>
+      <pre><code><span class="fn">Xil_ExceptionEnable</span>();   <span class="cm">// MSR |= EE | IE</span></code></pre>
+      <div class="warn">
+        <b>Порядок критичен:</b> <code>Xil_ExceptionEnable()</code> вызывается <u>после</u> регистрации всех обработчиков и <code>urr_init()</code>. Если включить раньше — можно поймать прерывание до готовности.
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">7</div>
+    <div class="step-body">
+      <h4>Основной цикл</h4>
+      <pre><code><span class="kw">while</span> (<span class="nm">1</span>) {
+    tel = <span class="fn">urr_get_tel</span>();
+    <span class="kw">if</span> (tel.connected &amp;&amp; tel.ready) {
+
+        urr_irq_flag = <span class="nm">0</span>;              <span class="cm">// сброс флага</span>
+        <span class="fn">urr_get_freqcode</span>(addr);          <span class="cm">// команда модулю</span>
+
+        <span class="ty">uint32_t</span> timeout = <span class="nm">100</span>;
+        <span class="kw">while</span> (!urr_irq_flag &amp;&amp; timeout--) {
+            <span class="fn">usleep</span>(<span class="nm">1000</span>);                <span class="cm">// ждём ISR до 100 мс</span>
+        }
+
+        <span class="kw">if</span> (urr_irq_flag) {
+            <span class="ty">uint32_t</span> freq_code;
+            <span class="kw">if</span> (<span class="fn">urr_read_freqcode</span>(&amp;freq_code) == <span class="nm">0</span>) {
+                <span class="fn">xil_printf</span>(<span class="st">"addr=%u freq_code=0x%06X\r\n"</span>, ...);
+            }
+        }
+        ...
+    }
+    addr++;
+    <span class="kw">if</span> (addr &gt; <span class="nm">50</span>) addr = <span class="nm">1</span>;
+    <span class="fn">usleep</span>(<span class="nm">500000</span>);
+}</code></pre>
+      <p>Циклически проходим адреса 1..50, для каждого ждём прерывание <code>irq_o</code> и читаем результат.</p>
+    </div>
+  </div>
+
+  <h3>6.2. <code>urr.c</code> — обработчики и API</h3>
+
+  <pre><code><span class="cm">/* ISR: готовность кода частоты */</span>
+<span class="ty">void</span> <span class="fn">urr_irq_handler</span>(<span class="ty">void</span> *ref)
+{
+    (<span class="ty">void</span>)ref;          <span class="cm">// подавляем warning "unused parameter"</span>
+    urr_irq_flag++;    <span class="cm">// main увидит и продолжит</span>
+}
+
+<span class="cm">/* ISR: подключение URR */</span>
+<span class="ty">void</span> <span class="fn">urr_connect_handler</span>(<span class="ty">void</span> *ref)
+{
+    (<span class="ty">void</span>)ref;
+    urr_connect_flag++;
+    s_connected = <span class="nm">1</span>;
+}</code></pre>
+
+  <div class="warn">
+    <b>Правила ISR:</b>
+    <ul>
+      <li>Коротко: без <code>xil_printf</code>, без <code>usleep</code>, без блокирующих вызовов.</li>
+      <li>Только <code>volatile</code>-переменные и регистры.</li>
+      <li>Не вызывать функции, которые могут ждать.</li>
+      <li>Если нужно передать данные в main — писать в <code>volatile</code> буфер/флаг.</li>
+    </ul>
+  </div>
+
+  <h3>6.3. <code>urr_check_crc()</code> — polling-ожидание</h3>
+  <pre><code><span class="ty">uint8_t</span> <span class="fn">urr_check_crc</span>(<span class="ty">void</span>)
+{
+    <span class="ty">uint32_t</span> timeout = <span class="nm">1000000</span>;
+
+    <span class="fn">Xil_Out32</span>(URR_CRC_START, <span class="nm">0x1</span>);   <span class="cm">// запуск</span>
+
+    <span class="kw">while</span> (timeout--) {
+        <span class="ty">uint32_t</span> st = <span class="fn">Xil_In32</span>(URR_CRC_STATUS);
+        <span class="kw">if</span> (st &amp; CRC_STATUS_DONE) {
+            <span class="kw">if</span> (st &amp; CRC_STATUS_MATCH) {
+                s_err_crc = <span class="nm">0</span>;
+                <span class="kw">return</span> <span class="nm">0</span>;   <span class="cm">// OK</span>
+            } <span class="kw">else</span> {
+                s_err_crc = <span class="nm">1</span>;
+                <span class="kw">return</span> <span class="nm">1</span>;   <span class="cm">// FAIL</span>
+            }
+        }
+        <span class="fn">usleep</span>(<span class="nm">1</span>);
+    }
+    s_err_crc = <span class="nm">1</span>;
+    <span class="kw">return</span> <span class="nm">1</span>;               <span class="cm">// таймаут</span>
+}</code></pre>
+  <p>Это не прерывание, а <b>опрос регистра статуса</b> с таймаутом. Такой подход проще, но занимает процессор. Прерывание эффективнее, но требует больше кода.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="setup">
+  <h2>7. Как настроить контроллер прерываний на MicroBlaze</h2>
+
+  <h3>7.1. В Vivado (аппаратная часть)</h3>
+  <ol>
+    <li>Добавить IP <b>AXI Interrupt Controller</b>.</li>
+    <li>Соединить входы <code>intr[0..N-1]</code> с сигналами прерываний периферии (у вас — <code>irq_o</code> на вход 1, <code>irq_con_o</code> на вход 0).</li>
+    <li>Выход <code>interrupt</code> INTC соединить с <code>INTERRUPT</code> MicroBlaze.</li>
+    <li>В настройках MicroBlaze включить <b>Use Interrupt</b> и выбрать <b>AXI INTC</b> как контроллер.</li>
+    <li>Сгенерировать bitstream и экспортировать <code>.xsa</code>.</li>
+  </ol>
+
+  <h3>7.2. В Vitis/SDK (программная часть)</h3>
+  <p>После импорта <code>.xsa</code> автоматически генерируются:</p>
+  <ul>
+    <li><code>xparameters.h</code> — макросы <code>XPAR_AXI_INTC_0_DEVICE_ID</code>, <code>XPAR_AXI_INTC_0_UART_TOP_0_IRQ_O_INTR</code> и т.п.</li>
+    <li><code>xintc_g.c</code> — массив <code>XIntc_ConfigTable[]</code> с конфигурациями INTC.</li>
+  </ul>
+
+  <div class="tip">
+    <b>Имена ID прерываний</b> формируются как <code>XPAR_&lt;INTC&gt;_&lt;IP&gt;_&lt;СИГНАЛ&gt;_INTR</code>. Именно их вы передаёте в <code>XIntc_Connect</code> и <code>XIntc_Enable</code>. Не путайте с номером входа — драйвер сам сопоставит.
+  </div>
+
+  <h3>7.3. Шаблон инициализации (универсальный)</h3>
+  <pre><code><span class="kw">static</span> <span class="ty">XIntc</span> Intc;
+
+<span class="ty">int</span> <span class="fn">setup_interrupts</span>(<span class="ty">void</span>)
+{
+    <span class="ty">int</span> Status;
+
+    <span class="cm">/* 1. Инициализация */</span>
+    Status = <span class="fn">XIntc_Initialize</span>(&amp;Intc, XPAR_AXI_INTC_0_DEVICE_ID);
+    <span class="kw">if</span> (Status != XST_SUCCESS) <span class="kw">return</span> XST_FAILURE;
+
+    <span class="cm">/* 2. Подключение всех нужных обработчиков */</span>
+    <span class="fn">XIntc_Connect</span>(&amp;Intc, INTR_ID_1, handler1, ref1);
+    <span class="fn">XIntc_Connect</span>(&amp;Intc, INTR_ID_2, handler2, ref2);
+
+    <span class="cm">/* 3. Запуск контроллера */</span>
+    <span class="fn">XIntc_Start</span>(&amp;Intc, XIN_REAL_MODE);
+
+    <span class="cm">/* 4. Разрешение источников */</span>
+    <span class="fn">XIntc_Enable</span>(&amp;Intc, INTR_ID_1);
+    <span class="fn">XIntc_Enable</span>(&amp;Intc, INTR_ID_2);
+
+    <span class="cm">/* 5. Регистрация обработчика исключения процессора */</span>
+    <span class="fn">Xil_ExceptionInit</span>();
+    <span class="fn">Xil_ExceptionRegisterHandler</span>(XIL_EXCEPTION_ID_INT,
+                                 (<span class="ty">Xil_ExceptionHandler</span>)XIntc_InterruptHandler,
+                                 &amp;Intc);
+
+    <span class="cm">/* 6. Только теперь разрешаем прерывания в процессоре */</span>
+    <span class="fn">Xil_ExceptionEnable</span>();
+
+    <span class="kw">return</span> XST_SUCCESS;
+}</code></pre>
+
+  <div class="note">
+    <b>Порядок важен:</b> сначала <code>Connect</code> (кто обработает), потом <code>Start</code> (включить контроллер), потом <code>Enable</code> (разрешить источник), потом <code>Xil_ExceptionRegisterHandler</code> (процессор знает, кого звать), и только в конце <code>Xil_ExceptionEnable</code> (разрешить прерывания в CPU).
+  </div>
+
+  <h3>7.4. Каскадный режим (Cascade)</h3>
+  <p>Если входов больше 32, INTC соединяют каскадом: мастер + slave. В коде это прозрачно — <code>XIntc_Connect</code> и <code>XIntc_Enable</code> сами определяют по <code>Id &gt; 31</code>, к какому контроллеру обратиться. Главное — правильно выставить <code>IntcType</code> в конфигурации (генерируется автоматически).</p>
+
+  <h3>7.5. Что происходит в железе при Enable</h3>
+  <pre><code><span class="fn">XIntc_Enable</span>(&amp;Intc, Id)
+    │
+    ├── если Id &lt;= 31:
+    │       Mask = 1 &lt;&lt; Id
+    │       IER |= Mask          (IER мастер-контроллера)
+    │
+    └── если Id &gt; 31:
+            SlaveId = Id / 32
+            Mask    = 1 &lt;&lt; (Id % 32)
+            Slave.IER |= Mask</code></pre>
+</section>
+
+<!-- ============================================================ -->
+<section id="problems">
+  <h2>8. Частые ошибки и как их избежать</h2>
+
+  <table>
+    <tr><th>Симптом</th><th>Причина</th><th>Решение</th></tr>
+    <tr>
+      <td>ISR не вызывается</td>
+      <td>Забыли <code>Xil_ExceptionEnable()</code></td>
+      <td>Вызвать после регистрации всех обработчиков</td>
+    </tr>
+    <tr>
+      <td>ISR вызывается один раз и больше нет</td>
+      <td>Не сбросили pending в INTC</td>
+      <td><code>XIntc_InterruptHandler</code> делает это автоматически, но проверьте, что периферия сняла свой сигнал</td>
+    </tr>
+    <tr>
+      <td><code>urr_irq_flag</code> не меняется в main</td>
+      <td>Нет <code>volatile</code></td>
+      <td>Объявить <code>volatile uint32_t urr_irq_flag</code></td>
+    </tr>
+    <tr>
+      <td>Обработчик срабатывает не для того источника</td>
+      <td>Перепутаны ID прерываний</td>
+      <td>Сверить с <code>xparameters.h</code></td>
+    </tr>
+    <tr>
+      <td>Прерывание до готовности системы</td>
+      <td><code>Xil_ExceptionEnable()</code> вызван слишком рано</td>
+      <td>Вызывать последним в цепочке инициализации</td>
+    </tr>
+    <tr>
+      <td>Зависание в ISR</td>
+      <td>Вызов <code>usleep</code>/<code>xil_printf</code> в ISR</td>
+      <td>Только флаги и регистры в ISR, вывод — в main</td>
+    </tr>
+    <tr>
+      <td>«Multiple definition» при линковке</td>
+      <td><code>volatile uint32_t urr_irq_flag</code> определён в .h</td>
+      <td><code>extern</code> в .h, определение — в одном .c</td>
+    </tr>
+  </table>
+
+  <h3>8.1. Отладка прерываний</h3>
+  <ul>
+    <li>Поставьте breakpoint в ISR — если не срабатывает, проверьте <code>MER</code>, <code>IER</code>, <code>MSR</code> в отладчике.</li>
+    <li>Счётчики <code>urr_irq_flag</code> и <code>urr_connect_flag</code> — простой способ убедиться, что ISR вообще вызывается.</li>
+    <li><code>Xil_In32(URR_BASE + 0x00)</code> — читайте ISR вручную, чтобы понять, какие биты pending.</li>
+    <li>Если INTC в каскаде — проверьте, что slave тоже запущен (<code>XIntc_Start</code> проходит по всем).</li>
+  </ul>
+
+  <h3>8.2. Минимальный чек-лист запуска</h3>
+  <ol>
+    <li>☐ В Vivado: INTC добавлен, входы соединены, выход → MicroBlaze INTERRUPT.</li>
+    <li>☐ В <code>xparameters.h</code> есть <code>XPAR_AXI_INTC_0_DEVICE_ID</code> и ID ваших прерываний.</li>
+    <li>☐ <code>XIntc_Initialize</code> → <code>XST_SUCCESS</code>.</li>
+    <li>☐ <code>XIntc_Connect</code> для каждого источника.</li>
+    <li>☐ <code>XIntc_Start(XIN_REAL_MODE)</code>.</li>
+    <li>☐ <code>XIntc_Enable</code> для каждого источника.</li>
+    <li>☐ <code>Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT, XIntc_InterruptHandler, &amp;Intc)</code>.</li>
+    <li>☐ <code>Xil_ExceptionEnable()</code> — последним.</li>
+    <li>☐ Все флаги ISR ↔ main — <code>volatile</code>.</li>
+    <li>☐ В ISR нет блокирующих вызовов.</li>
+  </ol>
+</section>
+
+<section>
+  <h2>Итоговая схема вашей системы</h2>
+  <pre><code>┌─────────────────────────────────────────────────────────────┐
+│                         MicroBlaze                          │
+│                                                             │
+│  MSR: [EE][IE] ← Xil_ExceptionEnable()                      │
+│         │                                                   │
+│         ▼                                                   │
+│  XExc_VectorTable[XIL_EXCEPTION_ID_INT]                     │
+│         │                                                   │
+│         ▼                                                   │
+│  XIntc_InterruptHandler(&amp;InterruptController)               │
+└─────────────────────────────────────────────────────────────┘
+              ▲
+              │ IRQ
+              │
+┌─────────────┴───────────────────────────────────────────────┐
+│                     AXI INTC                                │
+│                                                             │
+│  IER: [bit1][bit0]  ← XIntc_Enable()                        │
+│  MER: [master][hw]  ← XIntc_Start()                         │
+│                                                             │
+│  HandlerTable[0] → urr_connect_handler                      │
+│  HandlerTable[1] → urr_irq_handler                          │
+│                     ↑ XIntc_Connect()                       │
+└─────────────▲───────────────────────────────────────────────┘
+              │
+      ┌───────┴────────┐
+      │   URR module   │
+      │  irq_con_o ────┼──► вход 0
+      │  irq_o     ────┼──► вход 1
+      └────────────────┘
+              ▲
+              │ AXI BRAM (0xC0000000)
+              │
+      ┌───────┴────────┐
+      │  urr.c:        │
+      │  Xil_Out32 /   │
+      │  Xil_In32      │
+      └────────────────┘</code></pre>
+</section>
+
+</main>
+</body>
+</html>
