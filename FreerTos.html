@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreeRTOS: теория и миграция URR-драйвера с bare metal</title>
+<style>
+  :root {
+    --bg:        #0f1117;
+    --bg-alt:    #161922;
+    --bg-code:   #1b1f2a;
+    --fg:        #d7dbe3;
+    --fg-dim:    #8b93a7;
+    --accent:    #6cb6ff;
+    --accent-2:  #7ee0a5;
+    --warn:      #ffb454;
+    --err:       #ff6b6b;
+    --border:    #262b38;
+    --max-w:     980px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  /* ---------- Layout ---------- */
+  .wrap {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 32px 20px 40px 28px;
+    border-right: 1px solid var(--border);
+    background: var(--bg-alt);
+    font-size: 14px;
+  }
+
+  nav.toc h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-dim);
+    margin: 0 0 14px;
+  }
+
+  nav.toc a {
+    display: block;
+    color: var(--fg-dim);
+    text-decoration: none;
+    padding: 5px 10px;
+    border-left: 2px solid transparent;
+    border-radius: 0 4px 4px 0;
+    transition: all .15s;
+  }
+
+  nav.toc a:hover {
+    color: var(--fg);
+    background: rgba(108,182,255,.08);
+    border-left-color: var(--accent);
+  }
+
+  nav.toc a.sub {
+    padding-left: 22px;
+    font-size: 13px;
+  }
+
+  main {
+    padding: 48px 56px 120px;
+    max-width: var(--max-w);
+  }
+
+  /* ---------- Typography ---------- */
+  h1 {
+    font-size: 2rem;
+    line-height: 1.25;
+    margin: 0 0 8px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .lead {
+    color: var(--fg-dim);
+    font-size: 1.05rem;
+    margin: 0 0 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h2 {
+    font-size: 1.45rem;
+    margin: 56px 0 16px;
+    padding-top: 8px;
+    color: #fff;
+    border-top: 1px solid var(--border);
+  }
+
+  h2:first-of-type { border-top: none; }
+
+  h3 {
+    font-size: 1.1rem;
+    margin: 32px 0 12px;
+    color: var(--accent);
+  }
+
+  h4 {
+    font-size: 0.98rem;
+    margin: 22px 0 8px;
+    color: var(--fg);
+  }
+
+  p { margin: 0 0 14px; }
+
+  ul, ol { padding-left: 22px; margin: 0 0 16px; }
+  li { margin-bottom: 6px; }
+
+  strong { color: #fff; }
+
+  a.inline {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--accent);
+  }
+
+  /* ---------- Code ---------- */
+  code {
+    font-family: "JetBrains Mono", "Fira Code", Consolas, Menlo, monospace;
+    font-size: 0.88em;
+    background: var(--bg-code);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent-2);
+  }
+
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 0 0 18px;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    color: var(--fg);
+    font-size: inherit;
+  }
+
+  /* Простой хайлайт */
+  .kw  { color: #c792ea; }
+  .ty  { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .num { color: #f78c6c; }
+  .cm  { color: #5c6370; font-style: italic; }
+  .fn  { color: #82aaff; }
+  .def { color: #ffcb6b; }
+
+  /* ---------- Tables ---------- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 22px;
+    font-size: 14.5px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  th {
+    color: var(--fg-dim);
+    font-weight: 600;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--bg-alt);
+  }
+
+  tr:hover td { background: rgba(108,182,255,.03); }
+
+  /* ---------- Callouts ---------- */
+  .box {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 0 0 20px;
+    border-left: 4px solid;
+    background: var(--bg-alt);
+  }
+
+  .box p:last-child { margin-bottom: 0; }
+
+  .box.info  { border-color: var(--accent);   background: rgba(108,182,255,.06); }
+  .box.ok    { border-color: var(--accent-2); background: rgba(126,224,165,.06); }
+  .box.warn  { border-color: var(--warn);     background: rgba(255,180,84,.07); }
+  .box.err   { border-color: var(--err);      background: rgba(255,107,107,.07); }
+
+  .box-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .box.info  .box-title { color: var(--accent); }
+  .box.ok    .box-title { color: var(--accent-2); }
+  .box.warn  .box-title { color: var(--warn); }
+  .box.err   .box-title { color: var(--err); }
+
+  /* ---------- Badges ---------- */
+  .badge {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  .badge.bad  { background: rgba(255,107,107,.15); color: var(--err); }
+  .badge.good { background: rgba(126,224,165,.15); color: var(--accent-2); }
+  .badge.mid  { background: rgba(255,180,84,.15); color: var(--warn); }
+
+  /* ---------- Diff blocks ---------- */
+  .diff {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 0 0 22px;
+  }
+
+  .diff > div {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .diff h5 {
+    margin: 0;
+    padding: 8px 14px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: var(--bg-alt);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .diff .before h5 { color: var(--err); }
+  .diff .after  h5 { color: var(--accent-2); }
+
+  .diff pre {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: var(--bg-code);
+  }
+
+  @media (max-width: 900px) {
+    .wrap { grid-template-columns: 1fr; }
+    nav.toc { position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    main { padding: 32px 20px 80px; }
+    .diff { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <nav class="toc">
+    <h2>Содержание</h2>
+    <a href="#intro">Введение</a>
+    <a href="#what">Что такое FreeRTOS</a>
+    <a href="#tasks">1. Задачи и планировщик</a>
+    <a href="#prio">2. Приоритеты</a>
+    <a href="#states">3. Состояния задачи</a>
+    <a href="#sem">4. Семафоры</a>
+    <a href="#queue">5. Очереди</a>
+    <a href="#isr">6. Прерывания и задачи</a>
+    <a href="#delay">7. Задержки</a>
+    <a href="#project">8. Как это устроено в проекте</a>
+    <a href="#realtime">9. Real-time и Linux/Windows</a>
+    <a href="#migration">10. Миграция URR-драйвера</a>
+    <a href="#mig-addr" class="sub">10.1 Конфликт адресов BRAM</a>
+    <a href="#mig-irq"  class="sub">10.2 Прерывания</a>
+    <a href="#mig-isr"  class="sub">10.3 ISR и семафоры</a>
+    <a href="#mig-task" class="sub">10.4 Задача URR</a>
+    <a href="#mig-crc"  class="sub">10.5 CRC без busy-wait</a>
+    <a href="#mig-init" class="sub">10.6 urr_init</a>
+    <a href="#mig-del"  class="sub">10.7 Что удалить</a>
+    <a href="#mig-order" class="sub">10.8 Порядок запуска</a>
+    <a href="#mig-files" class="sub">10.9 Структура файлов</a>
+    <a href="#pitfalls">11. Частые ошибки</a>
+    <a href="#summary">Итог</a>
+  </nav>
+
+  <main>
+
+    <h1 id="intro">FreeRTOS: теория и миграция URR-драйвера с bare metal</h1>
+    <p class="lead">
+      Сводная страница: как устроена FreeRTOS, чем она отличается от bare metal и Linux/Windows,
+      и что конкретно нужно изменить в URR-драйвере при переходе на FreeRTOS.
+    </p>
+
+    <!-- ============================================================ -->
+    <h2 id="what">Что такое FreeRTOS</h2>
+    <p>
+      FreeRTOS — это ядро реального времени. Вместо одного большого <code>while(1)</code>
+      вы создаёте несколько независимых задач, а ядро само решает, какая из них должна
+      выполняться в данный момент.
+    </p>
+    <p>
+      В проекте, который вы показывали ранее, FreeRTOS используется как основа всей прошивки:
+      задачи обмена по RF, SPI, Ethernet, мониторинга, сервиса, обработки MCU.
+    </p>
+
+    <!-- ============================================================ -->
+    <h2 id="tasks">1. Задачи и планировщик</h2>
+    <p>Задача — обычная C-функция, которая никогда не должна возвращаться:</p>
+
+<pre><code><span class="kw">static void</span> <span class="fn">Tx_Task</span>(<span class="ty">void</span>* params)
+{
+    <span class="kw">while</span>(<span class="num">1</span>)
+    {
+        <span class="fn">xSemaphoreTake</span>(TxSem, portMAX_DELAY);
+        <span class="cm">/* ... */</span>
+    }
+}</code></pre>
+
+    <p>Создаётся через <code>xTaskCreate</code>:</p>
+
+<pre><code><span class="fn">xTaskCreate</span>(Tx_Task, <span class="str">"Tx_Task"</span>, TX_TASK_STACK,
+            <span class="kw">NULL</span>, TX_TASK_PRIORITY, &amp;TxTaskHandl);</code></pre>
+
+    <table>
+      <thead>
+        <tr><th>Параметр</th><th>Значение</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Функция задачи</td></tr>
+        <tr><td>2</td><td>Имя (для отладки)</td></tr>
+        <tr><td>3</td><td>Размер стека</td></tr>
+        <tr><td>4</td><td>Параметр, передаваемый в задачу</td></tr>
+        <tr><td>5</td><td>Приоритет</td></tr>
+        <tr><td>6</td><td>Указатель на хэндл задачи</td></tr>
+      </tbody>
+    </table>
+
+    <p>Планировщик запускается в <code>main</code>:</p>
+
+<pre><code><span class="kw">int</span> <span class="fn">main</span>(<span class="ty">void</span>)
+{
+    <span class="fn">xTaskCreate</span>(Init_Task, <span class="str">"Init_Task"</span>, INIT_TASK_STACK,
+                <span class="kw">NULL</span>, INIT_TASK_PRIORITY, &amp;InitTaskHandl);
+    <span class="fn">vTaskStartScheduler</span>();
+
+    <span class="kw">while</span>(<span class="num">1</span>);
+}</code></pre>
+
+    <div class="box info">
+      <span class="box-title">Важно</span>
+      <p>После <code>vTaskStartScheduler()</code> управление больше не возвращается в
+      <code>main</code>. Дальше ядро переключает задачи.</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="prio">2. Приоритеты</h2>
+    <p>В FreeRTOS чем больше число, тем выше приоритет.</p>
+
+<pre><code><span class="cm">#define</span> INIT_TASK_PRIORITY        <span class="num">9</span>
+<span class="cm">#define</span> TX_TASK_PRIORITY          <span class="num">9</span>
+<span class="cm">#define</span> RX_TASK_PRIORITY          <span class="num">8</span>
+<span class="cm">#define</span> RX_MASTER_QUEUE_PRIORITY  <span class="num">7</span>
+<span class="cm">#define</span> SPI_RX_TASK_PRIORITY      <span class="num">6</span>
+<span class="cm">#define</span> SPI_TX_TASK_PRIORITY      <span class="num">6</span>
+<span class="cm">#define</span> WIZNET_TASK_PRIORITY      <span class="num">5</span>
+<span class="cm">#define</span> MONITOR_TASK_PRIORITY     <span class="num">3</span>
+<span class="cm">#define</span> SERVICE_TASK_PRIORITY     <span class="num">2</span></code></pre>
+
+    <p>
+      То есть <code>Tx_Task</code> и <code>Init_Task</code> — самые приоритетные.
+      Если <code>Tx_Task</code> готова к выполнению, она вытеснит <code>Rx_Task</code>,
+      <code>Monitor_Task</code> и т.д.
+    </p>
+    <p>
+      Планировщик всегда выбирает самую приоритетную готовую задачу. Если несколько
+      задач имеют одинаковый приоритет, они могут выполняться по кругу, если включено
+      time slicing.
+    </p>
+
+    <!-- ============================================================ -->
+    <h2 id="states">3. Состояния задачи</h2>
+    <ul>
+      <li><strong>Running</strong> — выполняется прямо сейчас;</li>
+      <li><strong>Ready</strong> — готова выполняться, но ждёт CPU;</li>
+      <li><strong>Blocked</strong> — ждёт событие: семафор, очередь, <code>vTaskDelay</code>;</li>
+      <li><strong>Suspended</strong> — приостановлена явно.</li>
+    </ul>
+    <p>Почти все задачи в вашем проекте большую часть времени находятся в Blocked:</p>
+
+<pre><code><span class="fn">xSemaphoreTake</span>(TxSem, portMAX_DELAY);</code></pre>
+
+    <p>
+      Это означает: «спать, пока не дадут <code>TxSem</code>». Пока задача спит,
+      CPU может занимать другие задачи.
+    </p>
+
+    <!-- ============================================================ -->
+    <h2 id="sem">4. Семафоры</h2>
+    <p>Семафоры — механизм синхронизации и сигнализации. В проекте есть:</p>
+    <ul>
+      <li><strong>бинарные</strong>: <code>TxIpDmaDone</code>, <code>RxIpDmaDone</code>, <code>DmaWiznetSem</code>, <code>FCSem1</code> и др.;</li>
+      <li><strong>счётные</strong>: <code>TxSem</code>, <code>RxSem</code>, <code>SpiTxSem</code>, <code>SpiRxIpSem</code>;</li>
+      <li><strong>мьютексы</strong>: <code>DmaRfMutex</code>, <code>DmaEthMutex</code>, <code>DmaSpiRxMutex</code> и др.</li>
+    </ul>
+
+    <div class="diff">
+      <div class="before">
+        <h5>Из задачи</h5>
+<pre><code><span class="fn">xSemaphoreTake</span>(TxSem, portMAX_DELAY);
+<span class="cm">/* ... */</span>
+<span class="fn">xSemaphoreGive</span>(TxSem);</code></pre>
+      </div>
+      <div class="after">
+        <h5>Из прерывания</h5>
+<pre><code><span class="ty">BaseType_t</span> woken = pdFALSE;
+<span class="fn">xSemaphoreGiveFromISR</span>(TxSem, &amp;woken);
+<span class="fn">portYIELD_FROM_ISR</span>(woken);</code></pre>
+      </div>
+    </div>
+
+    <div class="box warn">
+      <span class="box-title">Правило</span>
+      <p>Из ISR нельзя вызывать обычные <code>xSemaphoreGive</code>. Только
+      <code>...FromISR</code> и обязательно с <code>&amp;woken</code>,
+      иначе не произойдёт немедленное переключение на разбуженную задачу.</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="queue">5. Очереди</h2>
+    <p>Очереди передают данные между задачами и прерываниями. В проекте:</p>
+
+<pre><code>PointerQueue_Eth2Rf      = <span class="fn">xQueueCreate</span>(RF_TX_FIFO_NUM_PIECE, <span class="kw">sizeof</span>(<span class="ty">uint8_t</span>));
+PointerQueue_PB_Eth2Rf   = <span class="fn">xQueueCreate</span>(<span class="num">1</span>, <span class="kw">sizeof</span>(<span class="ty">uint8_t</span>));
+PointerQueue_Spi2Tx      = <span class="fn">xQueueCreate</span>(SPI_TX_FIFO_NUM_PIECE, <span class="kw">sizeof</span>(<span class="ty">uint8_t</span>));
+IRQ_TOUT1_TOUT2_OR_RX    = <span class="fn">xQueueCreate</span>(<span class="num">4</span>, <span class="kw">sizeof</span>(<span class="ty">uint8_t</span>));</code></pre>
+
+    <p>
+      Очереди хранят не сами большие пакеты, а индексы или указатели на статические
+      буферы. Например, в <code>Rf_Queue_Add</code>:
+    </p>
+
+<pre><code><span class="fn">xQueueSend</span>(PointerQueue_Eth2Rf, &amp;UserDataQueue.head, <span class="num">0</span>);</code></pre>
+
+    <p>Сами данные лежат в <code>UserDataQueue.buf[...]</code>.</p>
+
+    <p>Из прерывания:</p>
+
+<pre><code><span class="fn">xQueueSendFromISR</span>(IRQ_TOUT1_TOUT2_OR_RX, &amp;IRQ_CODE, &amp;woken);</code></pre>
+
+    <!-- ============================================================ -->
+    <h2 id="isr">6. Прерывания и задачи</h2>
+    <p>Схема работы:</p>
+    <ol>
+      <li>Железное прерывание срабатывает.</li>
+      <li>ISR делает минимум: отправляет событие в очередь или даёт семафор.</li>
+      <li>Задача просыпается и делает основную работу.</li>
+    </ol>
+
+<pre><code><span class="ty">void</span> <span class="fn">Tx_EOP_Irq_Handle</span>(<span class="ty">void</span> *CallBackRef)
+{
+    <span class="kw">if</span> ((SysSettings.rfRole == SLAVE) &amp;&amp; (LocalStateFc.FcRun == <span class="num">0</span>)) {
+        <span class="ty">BaseType_t</span> woken = pdFALSE;
+        <span class="fn">xSemaphoreGiveFromISR</span>(TxSem, &amp;woken);
+        <span class="fn">portYIELD_FROM_ISR</span>(woken);
+    }
+}</code></pre>
+
+    <p>Или через очередь:</p>
+
+<pre><code><span class="ty">void</span> <span class="fn">TOUT1_Irq_Handle</span>(<span class="ty">void</span> *CallBackRef)
+{
+    <span class="ty">uint8_t</span> code = TIMEOUT_TOUT1_EVENT;
+    <span class="ty">BaseType_t</span> woken = pdFALSE;
+    <span class="fn">xQueueSendFromISR</span>(IRQ_TOUT1_TOUT2_OR_RX, &amp;code, &amp;woken);
+    <span class="fn">portYIELD_FROM_ISR</span>(woken);
+}</code></pre>
+
+    <p>
+      <code>portYIELD_FROM_ISR</code> нужен, чтобы после выхода из ISR сразу
+      переключиться на задачу, которая стала более приоритетной.
+    </p>
+
+    <!-- ============================================================ -->
+    <h2 id="delay">7. Задержки</h2>
+    <p><code>vTaskDelay</code> переводит задачу в Blocked на заданное число тиков:</p>
+
+<pre><code><span class="fn">vTaskDelay</span>(<span class="num">1300</span>);          <span class="cm">/* 1300 мс при configTICK_RATE_HZ = 1000 */</span>
+<span class="fn">vTaskDelay</span>(MON_TASK_PERIOD);</code></pre>
+
+    <!-- ============================================================ -->
+    <h2 id="project">8. Как это устроено в вашем проекте</h2>
+    <p>Порядок запуска:</p>
+    <ol>
+      <li><code>main</code> создаёт <code>Init_Task</code> с приоритетом 9.</li>
+      <li>Запускается планировщик.</li>
+      <li><code>Init_Task</code> инициализирует железо, очереди, семафоры, создаёт остальные задачи.</li>
+      <li>В конце <code>Init_Task</code> вызывает <code>vTaskDelete(NULL)</code> и удаляет себя.</li>
+      <li>Дальше работают задачи:
+        <ul>
+          <li><strong>Tx_Task</strong> — ждёт <code>TxSem</code>, берёт пакет из RF-очереди, настраивает TX IP, запускает DMA, ждёт <code>TxIpDmaDone</code>, стартует передачу.</li>
+          <li><strong>Rx_Task</strong> — ждёт <code>RxSem</code>, читает телеметрию RX, принимает данные через DMA, отправляет клиенту.</li>
+          <li><strong>Spi_Rx_Task</strong> — ждёт <code>SpiRxIpSem</code>, принимает Ethernet-пакет, парсит его.</li>
+          <li><strong>Spi_Tx_Task</strong> — ждёт <code>SpiTxSem</code>, берёт ответ из SPI-очереди и отправляет через DMA.</li>
+          <li><strong>Monitor_Task</strong> — периодически шлёт ping и обновляет RSSI/температуру.</li>
+          <li><strong>Service_Task</strong> — обрабатывает частотную коррекцию.</li>
+          <li><strong>MCU_Exch_IP_req_Task</strong> — обрабатывает запросы от MCU.</li>
+        </ul>
+      </li>
+    </ol>
+
+    <!-- ============================================================ -->
+    <h2 id="realtime">9. Real-time и Linux/Windows</h2>
+    <p>
+      FreeRTOS — это RTOS. Её цель — не «быстрее», а <strong>предсказуемее</strong>.
+      Она даёт механизмы, чтобы гарантировать выполнение важной задачи в срок.
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Система</th><th>Детерминизм</th><th>Когда подходит</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Bare metal</strong></td>
+          <td>Очень высокий, если код простой и аккуратный</td>
+          <td>Простые устройства, важна каждая микросекунда</td>
+        </tr>
+        <tr>
+          <td><strong>FreeRTOS</strong></td>
+          <td>Хороший: латентность переключения — единицы мкс</td>
+          <td>Сложные встраиваемые системы: RF, SPI, Ethernet, несколько задач</td>
+        </tr>
+        <tr>
+          <td><strong>Linux</strong></td>
+          <td>По умолчанию непредсказуемый. С PREEMPT_RT — близок к hard real-time</td>
+          <td>Мощные системы, где нужны драйверы, сеть, файловая система</td>
+        </tr>
+        <tr>
+          <td><strong>Windows</strong></td>
+          <td>Не hard real-time</td>
+          <td>Офисные, пользовательские задачи</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="box info">
+      <span class="box-title">Правильная формулировка</span>
+      <p>
+        Не «FreeRTOS исполнит во время, а Linux/Windows/bare metal — нет». А так:
+        <strong>bare metal</strong> может быть самым детерминированным, пока система простая;
+        <strong>FreeRTOS</strong> даёт инструменты для проектирования системы с предсказуемыми сроками;
+        <strong>Linux/Windows</strong> обычно не подходят для hard real-time, хотя Linux с PREEMPT_RT — может.
+      </p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="migration">10. Миграция URR-драйвера с bare metal на FreeRTOS</h2>
+
+    <table>
+      <thead>
+        <tr><th>Bare metal</th><th>В FreeRTOS-проекте</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>XIntc_Initialize / XIntc_Connect / XIntc_Start</code></td><td><code>Interrupt_Add_Irq()</code> + <code>Interrupt_Init()</code></td></tr>
+        <tr><td><code>Xil_ExceptionRegisterHandler</code></td><td>Уже сделано внутри <code>Interrupt_Init()</code></td></tr>
+        <tr><td><code>usleep(1000)</code> в цикле</td><td><code>vTaskDelay(pdMS_TO_TICKS(1))</code></td></tr>
+        <tr><td>Busy-wait на флаге <code>urr_irq_flag</code></td><td><code>xSemaphoreTake(UrrFreqSem, timeout)</code></td></tr>
+        <tr><td><code>while(1)</code> в <code>main</code></td><td>Отдельная FreeRTOS-задача</td></tr>
+        <tr><td>Обработчик прерывания пишет флаг</td><td>Обработчик даёт семафор через <code>...FromISR</code></td></tr>
+      </tbody>
+    </table>
+
+    <!-- ------------------------------------------------------------ -->
+    <h3 id="mig-addr">10.1 Конфликт адресов BRAM</h3>
+
+    <div class="box err">
+      <span class="box-title">Проверьте в первую очередь</span>
+      <p>
+        В <code>Port.h</code> проекта <code>MCU_BASE_ADDR</code> =
+        <code>XPAR_AXI_BRAM_CTRL_0_S_AXI_BASEADDR</code>, а в URR-драйвере
+        <code>URR_BASE</code> — тот же адрес. Это <strong>один и тот же BRAM-контроллер</strong>.
+        Либо разнесите адреса в одном окне, либо пересадите URR на другой BRAM-контроллер.
+      </p>
+    </div>
+
+<pre><code><span class="cm">#define</span> URR_BASE  XPAR_AXI_BRAM_CTRL_5_S_AXI_BASEADDR   <span class="cm">/* не CTRL_0! */</span></code></pre>
+
+    <!-- ------------------------------------------------------------ -->
+    <h3 id="mig-irq">10.2 Прерывания: заменяем XIntc на Interrupt_Add_Irq</h3>
+
+    <p><strong>Шаг 1.</strong> В <code>SysAPI_Irq_Init()</code> добавить регистрацию URR-прерываний:</p>
+
+<pre><code><span class="fn">Interrupt_Add_Irq</span>(XPAR_AXI_INTC_0_UART_TOP_0_IRQ_O_INTR,   urr_irq_handler);
+<span class="fn">Interrupt_Add_Irq</span>(XPAR_AXI_INTC_0_UART_TOP_0_IRQ_CON_O_INTR, urr_connect_handler);</code></pre>
+
+    <p><strong>Шаг 2.</strong> В <code>Interrupt.c</code> в <code>switch(hwId)</code> добавить case-ы:</p>
+
+<pre><code><span class="kw">case</span> XPAR_AXI_INTC_0_UART_TOP_0_IRQ_O_INTR:
+    <span class="fn">XConnectToInterruptCntrl</span>(
+        XPAR_AXI_INTC_0_UART_TOP_0_IRQ_O_INTR,
+        IrqList.irqObj[i].irqHandler, <span class="kw">NULL</span>,
+        XPAR_AXI_INTC_0_BASEADDR | <span class="num">0x01</span>);
+    <span class="fn">XEnableIntrId</span>(XPAR_AXI_INTC_0_UART_TOP_0_IRQ_O_INTR,
+                   XPAR_AXI_INTC_0_BASEADDR | <span class="num">0x01</span>);
+    <span class="kw">break</span>;
+
+<span class="kw">case</span> XPAR_AXI_INTC_0_UART_TOP_0_IRQ_CON_O_INTR:
+    <span class="fn">XConnectToInterruptCntrl</span>(
+        XPAR_AXI_INTC_0_UART_TOP_0_IRQ_CON_O_INTR,
+        IrqList.irqObj[i].irqHandler, <span class="kw">NULL</span>,
+        XPAR_AXI_INTC_0_BASEADDR | <span class="num">0x01</span>);
+    <span class="fn">XEnableIntrId</span>(XPAR_AXI_INTC_0_UART_TOP_0_IRQ_CON_O_INTR,
+                   XPAR_AXI_INTC_0_BASEADDR | <span class="num">0x01</span>);
+    <span class="kw">break</span>;</code></pre>
+
+    <p>
+      <strong>Шаг 3.</strong> Ничего из <code>XIntc_Initialize / XIntc_Start /
+      Xil_ExceptionRegisterHandler</code> в URR-драйвер не переносим — это всё
+      делает <code>Interrupt_Init()</code>.
+    </p>
+
+    <!-- ------------------------------------------------------------ -->
+    <h3 id="mig-isr">10.3 ISR и семафоры</h3>
+
+    <p>ISR должны быть короткими: только дать семафор или очередь.</p>
+
+<pre><code><span class="cm">#include "FreeRTOS.h"</span>
+<span class="cm">#include "semphr.h"</span>
+
+SemaphoreHandle_t UrrFreqSem;   <span class="cm">/* даётся из irq_o */</span>
+SemaphoreHandle_t UrrConSem;    <span class="cm">/* даётся из irq_con_o */</span>
+
+<span class="kw">static volatile</span> <span class="ty">uint8_t</span> s_connected = <span class="num">0</span>;
+<span class="kw">static volatile</span> <span class="ty">uint8_t</span> s_err_crc   = <span class="num">0</span>;
+
+<span class="ty">void</span> <span class="fn">urr_irq_handler</span>(<span class="ty">void</span> *ref)
+{
+    <span class="ty">BaseType_t</span> woken = pdFALSE;
+    <span class="fn">xSemaphoreGiveFromISR</span>(UrrFreqSem, &amp;woken);
+    <span class="fn">portYIELD_FROM_ISR</span>(woken);
+}
+
+<span class="ty">void</span> <span class="fn">urr_connect_handler</span>(<span class="ty">void</span> *ref)
+{
+    <span class="ty">BaseType_t</span> woken = pdFALSE;
+    s_connected = <span class="num">1</span>;
+    <span class="fn">xSemaphoreGiveFromISR</span>(UrrConSem, &amp;woken);
+    <span class="fn">portYIELD_FROM_ISR</span>(woken);
+}</code></pre>
+
+    <p>
+      <code>urr_irq_flag</code> и <code>urr_connect_flag</code> можно оставить
+      как счётчики для отладки, но логику строить на семафорах.
+    </p>
+
+    <!-- ------------------------------------------------------------ -->
+    <h3 id="mig-task">10.4 Задача URR вместо polling в main</h3>
+
+    <p>Создание семафоров в <code>SysAPI_Sem_Init()</code>:</p>
+
+<pre><code>UrrFreqSem = <span class="fn">xSemaphoreCreateBinary</span>();
+UrrConSem  = <span class="fn">xSemaphoreCreateBinary</span>();</code></pre>
+
+    <p>Объявления в <code>System_API.h</code>:</p>
+
+<pre><code><span class="kw">extern</span> SemaphoreHandle_t UrrFreqSem;
+<span class="kw">extern</span> SemaphoreHandle_t UrrConSem;</code></pre>
+
+    <p>Задача:</p>
+
+<pre><code><span class="kw">static void</span> <span class="fn">Urr_Task</span>(<span class="ty">void</span> *params)
+{
+    <span class="ty">uint32_t</span> addr = <span class="num">1</span>;
+
+    <span class="fn">urr_init</span>();
+    <span class="fn">xSemaphoreTake</span>(UrrConSem, <span class="fn">pdMS_TO_TICKS</span>(<span class="num">100</span>));
+
+    <span class="kw">while</span> (<span class="num">1</span>)
+    {
+        t_urr_tel tel = <span class="fn">urr_get_tel</span>();
+
+        <span class="kw">if</span> (tel.connected &amp;&amp; tel.ready)
+        {
+            <span class="fn">xSemaphoreTake</span>(UrrFreqSem, <span class="num">0</span>);   <span class="cm">/* сброс старых сигналов */</span>
+
+            <span class="fn">urr_get_freqcode</span>(addr);
+
+            <span class="kw">if</span> (<span class="fn">xSemaphoreTake</span>(UrrFreqSem,
+                                <span class="fn">pdMS_TO_TICKS</span>(<span class="num">100</span>)) == pdPASS)
+            {
+                <span class="ty">uint32_t</span> freq_code;
+                <span class="kw">if</span> (<span class="fn">urr_read_freqcode</span>(&amp;freq_code) == <span class="num">0</span>)
+                    <span class="fn">Sys_Printf</span>(<span class="str">"addr=%u freq=0x%06X\n\r"</span>, addr, freq_code);
+                <span class="kw">else</span>
+                    <span class="fn">Sys_Printf</span>(<span class="str">"addr=%u freq ERROR\n\r"</span>, addr);
+
+                <span class="kw">if</span> (<span class="fn">urr_check_crc</span>() == <span class="num">0</span>)
+                    <span class="fn">Sys_Printf</span>(<span class="str">"CRC OK\n\r"</span>);
+                <span class="kw">else</span>
+                    <span class="fn">Sys_Printf</span>(<span class="str">"CRC FAIL\n\r"</span>);
+            }
+            <span class="kw">else</span>
+            {
+                <span class="fn">Sys_Printf</span>(<span class="str">"addr=%u irq_o timeout\n\r"</span>, addr);
+            }
+        }
+        <span class="kw">else</span>
+        {
+            <span class="fn">Sys_Printf</span>(<span class="str">"URR not connected or not ready\n\r"</span>);
+        }
+
+        addr++;
+        <span class="kw">if</span> (addr &gt; <span class="num">50</span>) addr = <span class="num">1</span>;
+
+        <span class="fn">vTaskDelay</span>(<span class="fn">pdMS_TO_TICKS</span>(<span class="num">500</span>));
+    }
+}</code></pre>
+
+    <p>Запуск в <code>Init_Task</code>:</p>
+
+<pre><code><span class="cm">#define</span> URR_TASK_PRIORITY   <span class="num">4</span>
+<span class="cm">#define</span> URR_TASK_STACK      <span class="num">1024</span>
+
+<span class="kw">static</span> TaskHandle_t UrrTaskHandl;
+<span class="fn">xTaskCreate</span>(Urr_Task, <span class="str">"Urr_Task"</span>, URR_TASK_STACK,
+            <span class="kw">NULL</span>, URR_TASK_PRIORITY, &amp;UrrTaskHandl);</code></pre>
+
+    <!-- ------------------------------------------------------------ -->
+    <h3 id="mig-crc">10.5 CRC без busy-wait</h3>
+
+    <p>Bare-metal версия висит в цикле с <code>usleep(1)</code>. В задаче FreeRTOS это плохо — держит CPU.</p>
+
+    <div class="diff">
+      <div class="before">
+        <h5>Было (bare metal)</h5>
+<pre><code><span class="kw">while</span> (timeout--) {
+    <span class="ty">uint32_t</span> st = <span class="fn">Xil_In32</span>(URR_CRC_STATUS);
+    <span class="kw">if</span> (st &amp; CRC_STATUS_DONE) { <span class="cm">/* ... */</span> }
+    <span class="fn">usleep</span>(<span class="num">1</span>);
+}</code></pre>
+      </div>
+      <div class="after">
+        <h5>Стало (FreeRTOS)</h5>
+<pre><code><span class="kw">for</span> (<span class="ty">uint32_t</span> i = <span class="num">0</span>; i &lt; <span class="num">1000</span>; i++) {
+    <span class="ty">uint32_t</span> st = <span class="fn">Xil_In32</span>(URR_CRC_STATUS);
+    <span class="kw">if</span> (st &amp; CRC_STATUS_DONE) {
+        s_err_crc = (st &amp; CRC_STATUS_MATCH) ? <span class="num">0</span> : <span class="num">1</span>;
+        <span class="kw">return</span> s_err_crc;
+    }
+    <span class="fn">vTaskDelay</span>(<span class="num">1</span>);   <span class="cm">/* ~1 тик, не жжём CPU */</span>
+}</code></pre>
+      </div>
+    </div>
+
+    <p>Если CRC считается аппаратно за единицы тактов — выгоднее <code>taskYIELD()</code>:</p>
+
+<pre><code><span class="kw">while</span> (!(<span class="fn">Xil_In32</span>(URR_CRC_STATUS) &amp; CRC_STATUS_DONE)) {
+    <span class="fn">taskYIELD</span>();
+}</code></pre>
+
+    <!-- ------------------------------------------------------------ -->
+    <h3 id="mig-init">10.6 urr_init без XIntc</h3>
+
+<pre><code><span class="ty">void</span> <span class="fn">urr_init</span>(<span class="ty">void</span>)
+{
+    urr_irq_flag     = <span class="num">0</span>;
+    urr_connect_flag = <span class="num">0</span>;
+    s_connected      = <span class="num">1</span>;
+    s_err_crc        = <span class="num">0</span>;
+
+    <span class="fn">Xil_Out32</span>(URR_CTRL, <span class="num">0x1</span>);
+}</code></pre>
+
+    <p>Никаких <code>XIntc_*</code> тут не нужно — всё делает <code>Interrupt_Init()</code>.</p>
+
+    <!-- ------------------------------------------------------------ -->
+    <h3 id="mig-del">10.7 Что удалить из bare-metal main.c</h3>
+    <ul>
+      <li><code>XIntc_Initialize</code>, <code>XIntc_Connect</code>, <code>XIntc_Start</code>, <code>XIntc_Enable</code></li>
+      <li><code>Xil_ExceptionInit</code>, <code>Xil_ExceptionRegisterHandler</code>, <code>Xil_ExceptionEnable</code></li>
+      <li><code>init_platform()</code> / <code>cleanup_platform()</code> — их вызывает BSP до <code>main</code></li>
+      <li><code>while(1)</code> — он заменяется задачей <code>Urr_Task</code></li>
+    </ul>
+    <p>Из bare-metal <code>main.c</code> переезжает только логика тела цикла — она становится задачей.</p>
+
+    <!-- ------------------------------------------------------------ -->
+    <h3 id="mig-order">10.8 Порядок вызовов в проекте</h3>
+    <ol>
+      <li><code>main()</code> → <code>xTaskCreate(Init_Task, ...)</code> → <code>vTaskStartScheduler()</code>.</li>
+      <li><code>Init_Task</code>:
+        <ul>
+          <li><code>Sys_Info_Init</code>, <code>Clear_Err_State</code>, ...</li>
+          <li><code>SysAPI_Sem_Init()</code> — здесь создать <code>UrrFreqSem</code>, <code>UrrConSem</code>.</li>
+          <li><code>SysAPI_Irq_Init()</code> — здесь <code>Interrupt_Add_Irq(...)</code> для URR.</li>
+          <li><code>Interrupt_Init()</code> внутри <code>SysAPI_Irq_Init</code> сам разведёт URR-прерывания в INTC.</li>
+          <li><code>xTaskCreate(Urr_Task, ...)</code>.</li>
+        </ul>
+      </li>
+      <li><code>Urr_Task</code> работает как отдельная задача.</li>
+    </ol>
+
+    <!-- ------------------------------------------------------------ -->
+    <h3 id="mig-files">10.9 Итоговая структура файлов</h3>
+
+    <table>
+      <thead>
+        <tr><th>Файл</th><th>Что делать</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>urr.h</code></td><td>Оставить как есть, убрать упоминание <code>XIntc</code> в комментарии.</td></tr>
+        <tr><td><code>urr.c</code></td><td>Убрать <code>#include "xintc.h"</code>, заменить ISR на <code>...FromISR</code>, заменить <code>usleep</code> на <code>vTaskDelay</code>, убрать <code>main</code>-логику.</td></tr>
+        <tr><td><code>Interrupt.c</code></td><td>Добавить 2 case-а для URR-прерываний.</td></tr>
+        <tr><td><code>System_API.c / .h</code></td><td>Добавить 2 семафора.</td></tr>
+        <tr><td><code>main.c</code></td><td>Добавить <code>Urr_Task</code> и <code>xTaskCreate</code>.</td></tr>
+        <tr><td><code>Port.h</code></td><td>При конфликте адресов разнести <code>URR_BASE</code> и <code>MCU_BASE_ADDR</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ============================================================ -->
+    <h2 id="pitfalls">11. Частые ошибки</h2>
+
+    <div class="box err">
+      <span class="box-title">Не смешивайте два подхода к INTC</span>
+      <p>
+        Либо проект использует только <code>Interrupt_Init()</code> и
+        <code>XConnectToInterruptCntrl</code>, либо только <code>XIntc_*</code>.
+        Если в одном проекте вызвать и <code>XIntc_Initialize</code>, и
+        <code>XConfigInterruptCntrl</code> — INTC будет в неопределённом состоянии,
+        и прерывания не пойдут. В вашем проекте выбран первый путь, поэтому
+        URR-драйвер должен следовать ему.
+      </p>
+    </div>
+
+    <div class="box warn">
+      <span class="box-title">Другие подводные камни</span>
+      <ul>
+        <li>Долгое удержание мьютекса или отключение прерываний на большое время — растёт latency.</li>
+        <li><code>vTaskDelay</code> вместо событийных ожиданий — потеря точности.</li>
+        <li>Priority inversion — лечится через мьютексы с priority inheritance.</li>
+        <li>Переполнение стека задачи — включайте <code>vApplicationStackOverflowHook</code> (у вас он есть в main.c).</li>
+        <li>В <code>TOUT2_Irq_Handle</code> в исходном коде пропущен <code>&amp;</code> перед <code>xHigherPriorityTaskWoken</code> — это ошибка, надо исправить.</li>
+      </ul>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="summary">Итог</h2>
+
+    <div class="box ok">
+      <span class="box-title">FreeRTOS в двух словах</span>
+      <ul>
+        <li>Есть набор задач с приоритетами.</li>
+        <li>Планировщик по тику и событиям выбирает самую приоритетную готовую задачу.</li>
+        <li>Задачи блокируются на семафорах, очередях и задержках.</li>
+        <li>Прерывания будят задачи через <code>...FromISR</code>.</li>
+        <li>Очереди и семафоры связывают задачи и ISR.</li>
+        <li>Вы не управляете CPU вручную, а описываете, чего задача ждёт.</li>
+      </ul>
+    </div>
+
+    <div class="box ok">
+      <span class="box-title">Что делать с URR</span>
+      <ol>
+        <li>Разнести адреса <code>URR_BASE</code> и <code>MCU_BASE_ADDR</code>.</li>
+        <li>Убрать из <code>urr.c</code> всё, что касается <code>XIntc</code>.</li>
+        <li>ISR переписать на <code>xSemaphoreGiveFromISR</code> + <code>portYIELD_FROM_ISR</code>.</li>
+        <li>Зарегистрировать обработчики через <code>Interrupt_Add_Irq</code> и добавить case-ы в <code>Interrupt.c</code>.</li>
+        <li>Создать <code>UrrFreqSem</code> и <code>UrrConSem</code> в <code>SysAPI_Sem_Init</code>.</li>
+        <li>Логику из bare-metal <code>main</code> перенести в <code>Urr_Task</code>.</li>
+        <li><code>usleep</code> заменить на <code>vTaskDelay</code> или <code>taskYIELD</code>.</li>
+        <li>Запустить <code>Urr_Task</code> через <code>xTaskCreate</code> из <code>Init_Task</code>.</li>
+      </ol>
+    </div>
+
+  </main>
+</div>
+
+</body>
+</html>
