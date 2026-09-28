@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdGuard VPN CLI — Шпаргалка для Ubuntu</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #d4d4d4;
+            --accent-color: #4ec9b0;
+            --header-color: #569cd6;
+            --code-bg: #252526;
+            --code-border: #333;
+            --warning-color: #ce9178;
+            --success-color: #6a9955;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            color: var(--header-color);
+            border-bottom: 2px solid var(--code-border);
+            padding-bottom: 10px;
+            text-align: center;
+        }
+
+        h2 {
+            color: var(--accent-color);
+            margin-top: 30px;
+            border-left: 4px solid var(--accent-color);
+            padding-left: 10px;
+        }
+
+        h3 {
+            color: #dcdcaa;
+            margin-top: 20px;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        code {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #ce9178;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--code-border);
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #9cdcfe;
+            font-size: 0.95em;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .note {
+            background-color: #3a3a3a;
+            border-left: 4px solid var(--warning-color);
+            padding: 15px;
+            border-radius: 0 6px 6px 0;
+            margin: 20px 0;
+        }
+
+        .note strong {
+            color: var(--warning-color);
+        }
+
+        .success {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.8em;
+            color: #888;
+            border-top: 1px solid var(--code-border);
+            padding-top: 20px;
+        }
+
+        /* Стили для таблицы */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid var(--code-border);
+        }
+        th {
+            color: var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🛡️ AdGuard VPN CLI — Шпаргалка</h1>
+    <p>Краткое руководство по установке, настройке и работе с AdGuard VPN в Ubuntu (терминал).</p>
+
+    <h2>📦 1. Установка</h2>
+    <p>Официальный скрипт установки:</p>
+    <pre><code>curl -s https://raw.githubusercontent.com/AdguardTeam/AdGuardVPNCLI/master/scripts/install.sh | sudo bash</code></pre>
+    <p>После установки (если нужно автодополнение команд) добавьте в <code>~/.bashrc</code>:</p>
+    <pre><code>[ -s "/opt/adguardvpn_cli/bash-completion.sh" ] && \. "/opt/adguardvpn_cli/bash-completion.sh"</code></pre>
+
+    <h2>🔑 2. Авторизация (Вход)</h2>
+    <p>Выполните команду:</p>
+    <pre><code>adguardvpn-cli login</code></pre>
+    <ul>
+        <li>Терминал выдаст ссылку и код (действуют 30 минут).</li>
+        <li>Откройте ссылку в браузере на любом устройстве.</li>
+        <li>Введите код и подтвердите вход в аккаунт AdGuard.</li>
+        <li>В терминале появится сообщение <span class="success">Successfully Logged in</span>.</li>
+    </ul>
+
+    <h2>⚙️ 3. Первоначальная настройка (при первом connect)</h2>
+    <p>При первом запуске <code>adguardvpn-cli connect</code> система задаст 3 вопроса. Рекомендуемые ответы:</p>
+    <ul>
+        <li><strong>Set default routes in TUN mode?</strong> → <code>y</code> (весь трафик идет через VPN).</li>
+        <li><strong>Allow AdGuard VPN to set system DNS?</strong> → <code>n</code> (безопаснее не менять DNS без необходимости).</li>
+        <li><strong>Collect crash reports?</strong> → <code>y</code> или <code>n</code> (на ваше усмотрение).</li>
+    </ul>
+    <div class="note">
+        <strong>Важно:</strong> При подключении/отключении система может запрашивать пароль <code>sudo</code>. Это нормально, так как VPN меняет сетевые маршруты.
+    </div>
+
+    <h2>🔌 4. Основные команды</h2>
+    
+    <h3>Подключение и отключение</h3>
+    <table>
+        <tr>
+            <th>Команда</th>
+            <th>Действие</th>
+        </tr>
+        <tr>
+            <td><code>adguardvpn-cli connect</code></td>
+            <td>Подключиться к лучшему серверу (по умолчанию)</td>
+        </tr>
+        <tr>
+            <td><code>adguardvpn-cli disconnect</code></td>
+            <td>Отключить VPN</td>
+        </tr>
+        <tr>
+            <td><code>adguardvpn-cli status</code></td>
+            <td>Проверить текущий статус подключения</td>
+        </tr>
+    </table>
+
+    <h3>Выбор локации (сервера)</h3>
+    <p>Посмотреть список доступных стран:</p>
+    <pre><code>adguardvpn-cli list-locations</code></pre>
+    <p>Подключиться к конкретной стране (например, Швеция):</p>
+    <pre><code>adguardvpn-cli connect -l "Sweden"</code></pre>
+    <p><em>Название локации нужно указывать точно так, как оно отображается в списке.</em></p>
+
+    <h3>Управление аккаунтом</h3>
+    <table>
+        <tr>
+            <th>Команда</th>
+            <th>Действие</th>
+        </tr>
+        <tr>
+            <td><code>adguardvpn-cli logout</code></td>
+            <td>Выйти из аккаунта</td>
+        </tr>
+        <tr>
+            <td><code>adguardvpn-cli config</code></td>
+            <td>Открыть настройки (изменить TUN, DNS и т.д.)</td>
+        </tr>
+    </table>
+
+    <h2>🛠️ 5. Решение проблем</h2>
+    <ul>
+        <li><strong>Ошибка "Permission denied":</strong> Добавьте <code>sudo</code> перед командой, если она требует прав root.</li>
+        <li><strong>Логи в терминале:</strong> Строки <code>WARN</code> и <code>INFO</code> при подключении — это нормально. Они показывают процесс поиска сервера.</li>
+        <li><strong>Не работает интернет после отключения:</strong> Проверьте статус (<code>adguardvpn-cli status</code>). Если VPN выключен, но интернета нет — возможно, сбились маршруты. Попробуйте перезагрузить сеть: <code>sudo systemctl restart NetworkManager</code>.</li>
+    </ul>
+
+    <div class="footer">
+        Шпаргалка создана на основе опыта использования AdGuard VPN CLI в Ubuntu.<br>
+        Для получения полной справки используйте: <code>adguardvpn-cli --help</code>
+    </div>
+</div>
+
+</body>
+</html>
