@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>План тренировок на неделю (Верх/Низ)</title>
+    <style>
+        :root {
+            --primary: #e63946;
+            --secondary: #1d3557;
+            --bg: #f1faee;
+            --card-bg: #ffffff;
+            --text: #2b2d42;
+            --text-light: #6c757d;
+            --border: #e9ecef;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 20px;
+            background: var(--secondary);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #ffc107;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+
+        .schedule {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 50px;
+        }
+
+        .day-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: transform 0.2s;
+        }
+
+        .day-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .day-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .day-header h2 {
+            font-size: 1.3rem;
+            margin: 0;
+        }
+
+        .day-header .arrow {
+            font-size: 1.2rem;
+            transition: transform 0.3s;
+        }
+
+        .day-card.active .day-header .arrow {
+            transform: rotate(180deg);
+        }
+
+        .day-content {
+            padding: 0 20px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out, padding 0.3s ease;
+        }
+
+        .day-card.active .day-content {
+            padding: 20px;
+            max-height: 2000px; /* Достаточно для контента */
+        }
+
+        .exercise {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .exercise:last-child {
+            border-bottom: none;
+        }
+
+        .exercise-info {
+            flex: 1;
+            padding-right: 15px;
+        }
+
+        .exercise-name {
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: var(--secondary);
+        }
+
+        .exercise-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+
+        .exercise-tip {
+            font-size: 0.85rem;
+            color: var(--primary);
+            margin-top: 6px;
+            font-style: italic;
+            background: #fff5f5;
+            padding: 6px 10px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .exercise-sets {
+            font-weight: 700;
+            color: var(--secondary);
+            background: var(--bg);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .pdf-section {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .pdf-section h2 {
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+
+        .pdf-section p {
+            margin-bottom: 20px;
+            color: var(--text-light);
+        }
+
+        .btn-download {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .btn-download:hover {
+            background: #c1121f;
+        }
+
+        .pdf-viewer {
+            width: 100%;
+            height: 600px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-top: 20px;
+            background: #f8f9fa;
+        }
+
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.6rem; }
+            .exercise { flex-direction: column; }
+            .exercise-sets { margin-top: 10px; align-self: flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>План тренировок на неделю</h1>
+        <p>Сплит «Верх / Низ» (4 дня) на основе руководства «Персональная силовая тренировка»</p>
+    </header>
+
+    <div class="warning">
+        <strong>⚠️ Важно:</strong> Руководство рекомендует работать 60–90 минут чистой силовой работы. Не стремитесь сразу заполнить все 2 часа железом — это может привести к перетренированности. Отдыхайте 2–3 минуты в базовых упражнениях и 60–90 секунд в изоляции.
+    </div>
+
+    <div class="schedule" id="schedule">
+        <!-- День 1 -->
+        <div class="day-card active">
+            <div class="day-header" onclick="toggleDay(this)">
+                <h2>Понедельник — Верх A</h2>
+                <span class="arrow">▼</span>
+            </div>
+            <div class="day-content">
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">1. Жим штанги лежа на горизонтальной скамье</div>
+                        <div class="exercise-meta">Упражнение 16 (стр. 14)</div>
+                        <div class="exercise-tip">Следите, чтобы предплечья были перпендикулярны полу. Вдох — опускание, выдох — жим.</div>
+                    </div>
+                    <div class="exercise-sets">4 x 6-8</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">2. Тяга штанги стоя в наклоне</div>
+                        <div class="exercise-meta">Упражнение 30 (стр. 22)</div>
+                        <div class="exercise-tip">Наклон 45°, спина прямая. Тяните до верха живота.</div>
+                    </div>
+                    <div class="exercise-sets">4 x 6-8</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">3. Жим гантелей сидя («Жим Арнольда»)</div>
+                        <div class="exercise-meta">Упражнение 1 (стр. 6)</div>
+                        <div class="exercise-tip">Поворачивайте ладони при выжимании. Акцент на среднюю дельту.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 8-12</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">4. Тяга верхнего блока перед собой</div>
+                        <div class="exercise-meta">Упражнение 27 (стр. 21)</div>
+                        <div class="exercise-tip">Провисните в плечах, затем подтяните гриф к верху груди.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 8-12</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">5. Подъем гантелей в стороны</div>
+                        <div class="exercise-meta">Упражнение 3 (стр. 7)</div>
+                        <div class="exercise-tip">Слегка поворачивайте гантели внутрь, словно выливаете воду.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 12-15</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">6. Сгибание рук со штангой + Разгибание на тросовом тренажере (суперсет)</div>
+                        <div class="exercise-meta">Упражнения 34 + 42 (стр. 25, 29)</div>
+                        <div class="exercise-tip">Локти неподвижны. Работайте в суперсете для экономии времени.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 10-15</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">7. Пресс: Подъем туловища</div>
+                        <div class="exercise-meta">Упражнение 72 (стр. 46)</div>
+                        <div class="exercise-tip">Поясница прижата к полу. Не тяните себя за голову.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 15-20</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- День 2 -->
+        <div class="day-card">
+            <div class="day-header" onclick="toggleDay(this)">
+                <h2>Вторник — Низ A</h2>
+                <span class="arrow">▼</span>
+            </div>
+            <div class="day-content">
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">1. Приседание со штангой на плечах</div>
+                        <div class="exercise-meta">Упражнение 54 (стр. 35)</div>
+                        <div class="exercise-tip">Сделайте вдох для внутригрудного давления, держите спину ровной.</div>
+                    </div>
+                    <div class="exercise-sets">4 x 6-8</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">2. Становая тяга на прямых ногах</div>
+                        <div class="exercise-meta">Упражнение 63 (стр. 40)</div>
+                        <div class="exercise-tip">Колени прямые, наклоняйтесь до горизонтали. Чувствуйте растяжение бицепса бедра.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 8-10</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">3. Наклонный жим ногами</div>
+                        <div class="exercise-meta">Упражнение 58 (стр. 37)</div>
+                        <div class="exercise-tip">Прижимайте крестец к спинке. Стопы внизу — акцент на квадрицепс.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 10-12</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">4. Разгибание ног + Сгибание ног лежа (суперсет)</div>
+                        <div class="exercise-meta">Упражнения 60 + 61 (стр. 38, 39)</div>
+                        <div class="exercise-tip">Не отрывайте таз от скамьи. Полная амплитуда.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 12-15</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">5. Подъем на носки в наклоне «ослик»</div>
+                        <div class="exercise-meta">Упражнение 65 (стр. 41)</div>
+                        <div class="exercise-tip">Медленно опускайтесь, мощно поднимайтесь. Растяжка внизу.</div>
+                    </div>
+                    <div class="exercise-sets">4 x 12-20</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">6. Пресс: Подъем коленей в упоре</div>
+                        <div class="exercise-meta">Упражнение 77 (стр. 48)</div>
+                        <div class="exercise-tip">Спина прижата к спинке, плечи опущены.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 12-15</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- День 3 -->
+        <div class="day-card">
+            <div class="day-header" onclick="toggleDay(this)">
+                <h2>Четверг — Верх B</h2>
+                <span class="arrow">▼</span>
+            </div>
+            <div class="day-content">
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">1. Жим штанги лежа на наклонной скамье</div>
+                        <div class="exercise-meta">Упражнение 7 (стр. 10)</div>
+                        <div class="exercise-tip">Угол наклона 45-60°. Не ставьте скамью слишком высоко, чтобы не перегружать дельты.</div>
+                    </div>
+                    <div class="exercise-sets">4 x 6-10</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">2. Подтягивание широким хватом до касания грифа грудью</div>
+                        <div class="exercise-meta">Упражнение 26 (стр. 20)</div>
+                        <div class="exercise-tip">Если тяжело — замените на Тягу верхнего блока узким хватом (упр. 29).</div>
+                    </div>
+                    <div class="exercise-sets">4 x 6-10</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">3. Тяга на тренажере (или Тяга гантели одной рукой)</div>
+                        <div class="exercise-meta">Упражнение 24 (стр. 19) или Упражнение 31 (стр. 23)</div>
+                        <div class="exercise-tip">Сводите лопатки, не округляйте спину.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 8-12</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">4. Отжимание на брусьях (акцент на грудь)</div>
+                        <div class="exercise-meta">Упражнение 18 (стр. 15)</div>
+                        <div class="exercise-tip">Туловище выдвинуто вперед. Если хотите акцент на трицепс — делайте упр. 51.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 8-12</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">5. Разведение гантелей лежа на горизонтальной скамье</div>
+                        <div class="exercise-meta">Упражнение 10 (стр. 11)</div>
+                        <div class="exercise-tip">Руки слегка согнуты в локтях. Не разводите слишком широко.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 12-15</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">6. Сгибание рук с гантелями + Французский жим (суперсет)</div>
+                        <div class="exercise-meta">Упражнения 38 + 44 (стр. 27, 30)</div>
+                        <div class="exercise-tip">Разворачивайте кисти наружу при сгибании. Локти неподвижны.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 10-15</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">7. Шраги со штангой</div>
+                        <div class="exercise-meta">Упражнение 22 (стр. 18)</div>
+                        <div class="exercise-tip">Поднимайте плечи вверх, пытаясь достать до ушей. Не вращайте плечами.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 12-15</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- День 4 -->
+        <div class="day-card">
+            <div class="day-header" onclick="toggleDay(this)">
+                <h2>Пятница — Низ B</h2>
+                <span class="arrow">▼</span>
+            </div>
+            <div class="day-content">
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">1. Становая тяга</div>
+                        <div class="exercise-meta">Упражнение 33 (стр. 24)</div>
+                        <div class="exercise-tip">Натуживание при отрыве допустимо только при максимальных нагрузках. Следите за спиной.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 5-6</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">2. Выпад со штангой на плечах</div>
+                        <div class="exercise-meta">Упражнение 68 (стр. 43)</div>
+                        <div class="exercise-tip">Колено передней ноги не должно выходить за носок. Держите равновесие.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 8-10</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">3. Разгибание бедра на тренажере (или Гиперэкстензия)</div>
+                        <div class="exercise-meta">Упражнение 69 (стр. 43) или Упражнение 71 (стр. 45)</div>
+                        <div class="exercise-tip">Отличная замена ягодичному мосту. Туловище неподвижно.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 10-12</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">4. Сгибание ног лежа</div>
+                        <div class="exercise-meta">Упражнение 61 (стр. 39)</div>
+                        <div class="exercise-tip">Не отрывайте таз от скамьи. Полная амплитуда.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 12-15</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">5. Разгибание ног</div>
+                        <div class="exercise-meta">Упражнение 60 (стр. 38)</div>
+                        <div class="exercise-tip">В верхней точке задержитесь на секунду. Плавно опускайте.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 12-15</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">6. Подъем на носки сидя</div>
+                        <div class="exercise-meta">Упражнение 66 (стр. 41)</div>
+                        <div class="exercise-tip">Акцент на камбаловидную мышцу. Растяжка внизу.</div>
+                    </div>
+                    <div class="exercise-sets">4 x 15-20</div>
+                </div>
+                <div class="exercise">
+                    <div class="exercise-info">
+                        <div class="exercise-name">7. Пресс: Подъем туловища с поворотом</div>
+                        <div class="exercise-meta">Упражнение 78 (стр. 49)</div>
+                        <div class="exercise-tip">Поясница прижата к полу. Тянитесь локтем к противоположному колену.</div>
+                    </div>
+                    <div class="exercise-sets">3 x 12-15</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Секция с PDF -->
+    <div class="pdf-section">
+        <h2>📄 Исходное руководство</h2>
+        <p>Ниже представлен ваш PDF-файл с методическими указаниями. Если файл не отображается, скачайте его по ссылке.</p>
+        <a href="personal.trenirovk.pdf" download class="btn-download">⬇️ Скачать PDF руководство</a>
+        
+        <!-- Вставка PDF -->
+        <iframe src="personal.trenirovk.pdf" class="pdf-viewer" title="Руководство по персональной силовой тренировке">
+            <p>Ваш браузер не поддерживает встроенные PDF-файлы. Пожалуйста, скачайте файл по ссылке выше.</p>
+        </iframe>
+    </div>
+</div>
+
+<script>
+    function toggleDay(element) {
+        // Закрываем все остальные карточки
+        const allCards = document.querySelectorAll('.day-card');
+        allCards.forEach(card => {
+            if (card !== element.parentElement) {
+                card.classList.remove('active');
+            }
+        });
+        
+        // Переключаем текущую карточку
+        element.parentElement.classList.toggle('active');
+    }
+</script>
+
+</body>
+</html>
