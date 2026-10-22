@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Анализ скриптов сборки Xilinx Vivado/Vitis</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg-alt: #1e293b;
+    --bg-code: #0b1220;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent-2: #a78bfa;
+    --border: #334155;
+    --success: #4ade80;
+    --warning: #fbbf24;
+    --danger: #f87171;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    font-size: 16px;
+  }
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+  }
+  header p {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    max-width: 1400px;
+    margin: 0 auto;
+    gap: 32px;
+    padding: 24px;
+  }
+  nav.toc {
+    position: sticky;
+    top: 90px;
+    align-self: start;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  nav.toc h2 {
+    margin: 0 0 12px;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+  }
+  nav.toc ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  nav.toc li { margin-bottom: 4px; }
+  nav.toc a {
+    display: block;
+    padding: 6px 10px;
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    border-left: 2px solid transparent;
+    transition: all 0.15s ease;
+  }
+  nav.toc a:hover {
+    background: var(--bg);
+    border-left-color: var(--accent);
+    color: var(--accent);
+  }
+  main { min-width: 0; }
+  section {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+  }
+  section h2 {
+    margin: 0 0 16px;
+    font-size: 1.4rem;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+  }
+  section h3 {
+    margin: 24px 0 12px;
+    font-size: 1.1rem;
+    color: var(--accent-2);
+  }
+  p { margin: 10px 0; }
+  code {
+    background: var(--bg-code);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+    font-size: 0.88em;
+    color: #fbcfe8;
+    border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: #cbd5e1;
+  }
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+  .comment { color: #64748b; }
+  .keyword { color: #c084fc; }
+  .string { color: #86efac; }
+  .var { color: #7dd3fc; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.92rem;
+    background: var(--bg);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  th {
+    background: #1a2437;
+    color: var(--accent);
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(56, 189, 248, 0.04); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-right: 6px;
+  }
+  .badge.bash { background: #166534; color: #bbf7d0; }
+  .badge.tcl { background: #7c3aed; color: #ddd6fe; }
+  .badge.both { background: #b45309; color: #fde68a; }
+
+  .note {
+    border-left: 4px solid var(--accent);
+    background: rgba(56, 189, 248, 0.06);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .note.warn {
+    border-left-color: var(--warning);
+    background: rgba(251, 191, 36, 0.06);
+  }
+  .note.danger {
+    border-left-color: var(--danger);
+    background: rgba(248, 113, 113, 0.06);
+  }
+  .note strong { color: var(--accent); }
+  .note.warn strong { color: var(--warning); }
+  .note.danger strong { color: var(--danger); }
+
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 16px 0;
+    padding: 16px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .flow .step {
+    padding: 8px 14px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-family: monospace;
+  }
+  .flow .step.done { border-color: var(--success); color: var(--success); }
+  .flow .arrow { color: var(--text-muted); font-size: 1.2rem; }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; padding: 16px; }
+    nav.toc { position: static; max-height: none; }
+    section { padding: 18px; }
+    pre { font-size: 0.78rem; }
+    table { font-size: 0.82rem; }
+    th, td { padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Анализ скриптов сборки Xilinx Vivado / Vitis</h1>
+  <p>Полный разбор конвейера сборки FPGA-проекта UKL_M_v1</p>
+</header>
+
+<div class="layout">
+
+  <nav class="toc">
+    <h2>Оглавление</h2>
+    <ul>
+      <li><a href="#overview">Общая архитектура</a></li>
+      <li><a href="#settings">1. settings_not_run.sh</a></li>
+      <li><a href="#run">_run_me_.sh</a></li>
+      <li><a href="#hw">2. Аппаратная сборка</a></li>
+      <li><a href="#sw">3. Программная сборка</a></li>
+      <li><a href="#bitmcs">4. Финальная сборка</a></li>
+      <li><a href="#write_bit">Прошивка FPGA</a></li>
+      <li><a href="#write_flash">Прошивка флеш</a></li>
+      <li><a href="#docs">Документация</a></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <section id="overview">
+      <h2>🗺️ Общая архитектура и порядок работы</h2>
+      <p>Система организована по принципу <strong>конвейера</strong>: каждый следующий скрипт использует результаты предыдущего.</p>
+
+      <div class="flow">
+        <span class="step">1_settings</span>
+        <span class="arrow">→</span>
+        <span class="step">2_do_hw</span>
+        <span class="arrow">→</span>
+        <span class="step">3_do_sw</span>
+        <span class="arrow">→</span>
+        <span class="step">4_bit_mcs</span>
+        <span class="arrow">→</span>
+        <span class="step done">result/</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr><th>Файл</th><th>Назначение</th><th>Тип</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>1_settings_not_run.sh</code></td>
+            <td><strong>Центральный конфигурационный файл</strong>. Подключается через <code>source</code>, не запускается.</td>
+            <td><span class="badge bash">bash</span></td>
+          </tr>
+          <tr>
+            <td><code>_run_me_.sh</code></td>
+            <td><strong>Главный оркестратор</strong>. Последовательно вызывает все скрипты.</td>
+            <td><span class="badge bash">bash</span></td>
+          </tr>
+          <tr>
+            <td><code>2_do_hw.sh</code> + <code>.tcl</code></td>
+            <td><strong>Аппаратная сборка</strong>. Синтез, имплементация, битстрим.</td>
+            <td><span class="badge both">bash + tcl</span></td>
+          </tr>
+          <tr>
+            <td><code>3_do_sw.sh</code> + <code>.tcl</code></td>
+            <td><strong>Программная сборка</strong>. Платформа, BSP, приложение, <code>.elf</code>.</td>
+            <td><span class="badge both">bash + tcl</span></td>
+          </tr>
+          <tr>
+            <td><code>4_bit_mcs.sh</code></td>
+            <td><strong>Финальная сборка</strong>. Объединение <code>.bit</code> + <code>.elf</code>, генерация <code>.mcs</code>.</td>
+            <td><span class="badge both">bash + tcl</span></td>
+          </tr>
+          <tr>
+            <td><code>write_bit_to_fpga.sh</code></td>
+            <td><strong>Прошивка FPGA</strong> через JTAG.</td>
+            <td><span class="badge both">bash + tcl</span></td>
+          </tr>
+          <tr>
+            <td><code>write_mcs_to_flash.sh</code></td>
+            <td><strong>Прошивка флеш</strong> (устаревший метод через <code>impact</code>).</td>
+            <td><span class="badge bash">bash</span></td>
+          </tr>
+          <tr>
+            <td><code>write_mcs_to_flash_viv.sh</code></td>
+            <td><strong>Прошивка флеш</strong> (новый метод через Vivado HW Manager).</td>
+            <td><span class="badge both">bash + tcl</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="settings">
+      <h2>⚙️ 1. <code>1_settings_not_run.sh</code> — Конфигурация</h2>
+      <p>Единая точка настройки. Только экспортирует переменные окружения.</p>
+
+      <table>
+        <thead>
+          <tr><th>Переменная</th><th>Назначение</th><th>Значения</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>NEW_BOARD</code></td><td>Ревизия платы</td><td><code>1</code> — новая (2-канальная), <code>0</code> — старая</td></tr>
+          <tr><td><code>SRC_BD</code></td><td>Путь к <code>.bd</code></td><td>Вычисляется из <code>NEW_BOARD</code></td></tr>
+          <tr><td><code>SRC_SW</code></td><td>Исходники C для Vitis</td><td><code>../VITIS_sources</code></td></tr>
+          <tr><td><code>BUILD</code></td><td>Каталог результатов</td><td><code>../build</code></td></tr>
+          <tr><td><code>PRJ_NAME</code></td><td>Имя проекта Vivado</td><td><code>UKL_M_v1</code></td></tr>
+          <tr><td><code>GEN_IP</code></td><td>Флаг генерации IP</td><td><code>1</code> — генерировать, <code>0</code> — готовые</td></tr>
+        </tbody>
+      </table>
+
+      <div class="note warn">
+        <strong>Важно:</strong> при первой сборке установите <code>GEN_IP=1</code>, при последующих — <code>GEN_IP=0</code>, чтобы не тратить время на регенерацию IP-ядер.
+      </div>
+    </section>
+
+    <section id="run">
+      <h2>🎯 <code>_run_me_.sh</code> — Оркестратор</h2>
+      <p>Главный скрипт, который запускает всю цепочку с проверкой статусов на каждом этапе.</p>
+      <pre><code><span class="comment"># Псевдокод логики:</span>
+source 1_settings.sh
+if GEN_IP == 1: SYN_with_IP.sh  <span class="comment"># генерация IP</span>
+if GEN_IP == 0: SYN_without_IP.sh
+
+source 2_do_hw.sh   → RESULT_HW
+  if RESULT_HW == 0:
+    source 3_do_sw.sh  → RESULT_SW
+    if RESULT_SW == 0:
+      source 4_bit_mcs.sh → RESULT_BITMCS
+      if RESULT_BITMCS == 0: <span class="string">"Done"</span></code></pre>
+      <p>Каждый скрипт возвращает переменную-результат (<code>RESULT_HW</code>, <code>RESULT_SW</code>, <code>RESULT_BITMCS</code>), которая равна <code>0</code> при успехе и <code>-1</code> при ошибке.</p>
+    </section>
+
+    <section id="hw">
+      <h2>🏗️ 2. Аппаратная сборка: <code>2_do_hw.sh</code> + <code>2_do_hw.tcl</code></h2>
+
+      <h3>📜 <code>2_do_hw.sh</code> — подготовка</h3>
+      <ol>
+        <li>Подключает настройки: <code>source ./1_settings_not_run.sh</code></li>
+        <li>Создаёт резервную копию: <code>cp -r ${BUILD} ${BUILD}_old</code></li>
+        <li>Очищает и создаёт директорию сборки</li>
+        <li>Копирует <code>.bd</code>, <code>*.ipdefs</code>, <code>*.xdc</code> в новую структуру</li>
+        <li>Запускает Vivado в batch-режиме</li>
+        <li>Возвращает <code>RESULT_HW</code></li>
+      </ol>
+
+      <h3>📜 <code>2_do_hw.tcl</code> — Tcl для Vivado</h3>
+      <table>
+        <thead><tr><th>Команда</th><th>Назначение</th></tr></thead>
+        <tbody>
+          <tr><td><code>create_project</code></td><td>Создаёт проект для ПЛИС <code>xc7k160tffg676-2L</code></td></tr>
+          <tr><td><code>file rename</code></td><td>Переименовывает каталоги под имя проекта</td></tr>
+          <tr><td><code>set_property ip_repo_paths</code></td><td>Указывает путь к репозиторию IP</td></tr>
+          <tr><td><code>update_ip_catalog</code></td><td>Обновляет каталог IP</td></tr>
+          <tr><td><code>add_files</code></td><td>Добавляет <code>.bd</code> в проект</td></tr>
+          <tr><td><code>make_wrapper</code></td><td>Создаёт HDL-обёртку для блочного дизайна</td></tr>
+          <tr><td><code>read_xdc</code></td><td>Читает ограничения</td></tr>
+          <tr><td><code>launch_runs synth_1 -jobs 8</code></td><td>Запускает синтез в 8 потоков</td></tr>
+          <tr><td><code>wait_on_run</code></td><td>Ожидает завершения этапа</td></tr>
+          <tr><td><code>launch_runs impl_1 -to_step write_bitstream</code></td><td>Имплементация + генерация битстрима</td></tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <strong>Документация:</strong> UG835 — Vivado Design Suite Tcl Command Reference Guide.
+      </div>
+    </section>
+
+    <section id="sw">
+      <h2>💻 3. Программная сборка</h2>
+
+      <h3>📜 <code>3_do_sw.sh</code> — координация</h3>
+      <p>Находит проект <code>*.xpr</code>, экспортирует <code>.xsa</code> через Vivado, затем запускает XSCT.</p>
+
+      <h3>📜 <code>3_do_sw_viv.tcl</code> — экспорт <code>.xsa</code></h3>
+      <pre><code><span class="keyword">open_project</span> ${prj_name}.xpr
+<span class="keyword">write_hw_platform</span> -include_bit -fixed -force -file ${prj_name}_wrapper.xsa</code></pre>
+
+      <h3>📜 <code>3_do_sw_xsct.tcl</code> — платформа и приложение</h3>
+      <p>Выполняется в XSCT (Xilinx Software Command-Line Tool).</p>
+      <table>
+        <thead><tr><th>Команда</th><th>Назначение</th></tr></thead>
+        <tbody>
+          <tr><td><code>setws</code></td><td>Устанавливает workspace</td></tr>
+          <tr><td><code>platform create</code></td><td>Создаёт платформу из <code>.xsa</code></td></tr>
+          <tr><td><code>domain create</code></td><td>Создаёт домен FreeRTOS для MicroBlaze</td></tr>
+          <tr><td><code>bsp config</code></td><td>Настраивает таймеры, кучу, приоритеты</td></tr>
+          <tr><td><code>bsp regenerate</code></td><td>Регенерирует BSP</td></tr>
+          <tr><td><code>platform generate</code></td><td>Быстрая генерация платформы</td></tr>
+          <tr><td><code>app create</code></td><td>Создаёт приложение по шаблону</td></tr>
+          <tr><td><code>app build</code></td><td>Компилирует <code>.elf</code></td></tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <strong>Документация:</strong> UG1208 (XSCT Reference Guide), UG1400 (Vitis Embedded Software Development).
+      </div>
+    </section>
+
+    <section id="bitmcs">
+      <h2>🔧 4. Финальная сборка: <code>4_bit_mcs.sh</code></h2>
+      <p>Объединяет аппаратную и программную части в один файл прошивки.</p>
+
+      <h3>Шаг 1: Объединение <code>.bit</code> и <code>.elf</code></h3>
+      <pre><code>updatemem -force -meminfo ${NAME_BD}.mmi \
+    -data ../../${PRJ_NAME}.sdk/ukl7m/Release/ukl7m.elf \
+    -proc Top_level_i/microblaze_0 \
+    -bit ${NAME_BD}.bit \
+    -out ../../result/ukl7m_micro_init_mem.bit</code></pre>
+      <p>ELF-файл встраивается в битстрим, чтобы MicroBlaze сразу загрузил программу из памяти.</p>
+
+      <h3>Шаг 2: Генерация <code>.mcs</code></h3>
+      <pre><code>write_cfgmem -format mcs -force -interface spix4 -size 32 \
+    -loadbit <span class="string">"up 0x0 ukl7m_micro_init_mem.bit"</span> \
+    -file ukl7m_micro_init_mem.mcs</code></pre>
+      <p><code>write_cfgmem</code> — ключевая команда для создания конфигурационного файла памяти.</p>
+
+      <div class="note">
+        <strong>Документация:</strong> UG908 (Programming and Debugging), UG835.
+      </div>
+    </section>
+
+    <section id="write_bit">
+      <h2>🚀 Прошивка FPGA: <code>write_bit_to_fpga.sh</code></h2>
+      <p>Генерирует Tcl-скрипт для Vivado Hardware Manager и выполняет его.</p>
+
+      <table>
+        <thead><tr><th>Tcl-команда</th><th>Назначение</th></tr></thead>
+        <tbody>
+          <tr><td><code>open_hw_manager</code></td><td>Открывает Hardware Manager</td></tr>
+          <tr><td><code>connect_hw_server</code></td><td>Подключается к серверу оборудования</td></tr>
+          <tr><td><code>open_hw_target</code></td><td>Открывает JTAG-цель</td></tr>
+          <tr><td><code>current_hw_device</code></td><td>Выбирает устройство <code>xc7k160t_0</code></td></tr>
+          <tr><td><code>set_property PROBES.FILE</code></td><td>Указывает <code>.ltx</code> для отладки</td></tr>
+          <tr><td><code>set_property PROGRAM.FILE</code></td><td>Указывает <code>.bit</code> для прошивки</td></tr>
+          <tr><td><code>program_hw_devices</code></td><td>Прошивает FPGA</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="write_flash">
+      <h2>💾 Прошивка флеш-памяти</h2>
+
+      <h3>📜 Старый метод: <code>write_mcs_to_flash.sh</code></h3>
+      <p>Использует утилиту <strong>iMPACT</strong> (устаревшую, но поддерживаемую для 7-й серии ПЛИС).</p>
+
+      <table>
+        <thead><tr><th>Команда iMPACT</th><th>Назначение</th></tr></thead>
+        <tbody>
+          <tr><td><code>setMode -bs</code></td><td>Режим Boundary Scan</td></tr>
+          <tr><td><code>setCable -port auto</code></td><td>Автоопределение кабеля</td></tr>
+          <tr><td><code>Identify -inferir</code></td><td>Идентификация цепочки JTAG</td></tr>
+          <tr><td><code>attachflash -position 1 -spi "W25Q64FV"</code></td><td>Подключение SPI-флеш</td></tr>
+          <tr><td><code>assignfiletoattachedflash</code></td><td>Назначение MCS-файла</td></tr>
+          <tr><td><code>Program -p 1 -dataWidth 4 -spionly -e -v -loadfpga</code></td><td>Стирание + программирование + верификация</td></tr>
+        </tbody>
+      </table>
+
+      <h3>📜 Новый метод: <code>write_mcs_to_flash_viv.sh</code></h3>
+      <p>Использует Vivado Hardware Manager и объект <code>hw_cfgmem</code>.</p>
+
+      <table>
+        <thead><tr><th>Tcl-команда</th><th>Назначение</th></tr></thead>
+        <tbody>
+          <tr><td><code>create_hw_cfgmem</code></td><td>Создаёт объект конфигурационной памяти</td></tr>
+          <tr><td><code>PROGRAM.ADDRESS_RANGE</code></td><td>Диапазон адресов для стирания</td></tr>
+          <tr><td><code>PROGRAM.FILES</code></td><td>Указывает MCS-файл</td></tr>
+          <tr><td><code>PROGRAM.ERASE 1</code></td><td>Включает стирание</td></tr>
+          <tr><td><code>PROGRAM.VERIFY 1</code></td><td>Включает верификацию</td></tr>
+          <tr><td><code>program_hw_cfgmem</code></td><td>Запускает прошивку флеш</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="docs">
+      <h2>📚 Сводная таблица документации</h2>
+      <table>
+        <thead><tr><th>Инструмент / Команда</th><th>Официальный документ</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Общие Tcl-команды Vivado (<code>create_project</code>, <code>add_files</code>, <code>write_cfgmem</code> и др.)</td>
+            <td><strong>UG835</strong> — Vivado Design Suite Tcl Command Reference Guide</td>
+          </tr>
+          <tr>
+            <td>Программирование и отладка (<code>program_hw_devices</code>, <code>create_hw_cfgmem</code>)</td>
+            <td><strong>UG908</strong> — Vivado Design Suite User Guide: Programming and Debugging</td>
+          </tr>
+          <tr>
+            <td>XSCT (<code>platform create</code>, <code>domain create</code>, <code>bsp config</code>, <code>app build</code>)</td>
+            <td><strong>UG1208</strong> — XSCT Reference Guide</td>
+          </tr>
+          <tr>
+            <td>Vitis Embedded (примеры XSCT-сессий, <code>app create</code>, <code>platform generate</code>)</td>
+            <td><strong>UG1400</strong> — Vitis Unified Software Platform Documentation</td>
+          </tr>
+          <tr>
+            <td>iMPACT (<code>attachflash</code>, <code>assignfiletoattachedflash</code>, <code>Program</code>)</td>
+            <td>Ответы Xilinx AR <strong>#40782</strong> и примеры сообщества</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <strong>💡 Совет:</strong> в консоли Vivado можно получить справку по любой команде, набрав <code>help &lt;имя_команды&gt;</code>. Это самый быстрый способ уточнить синтаксис.
+      </div>
+    </section>
+
+  </main>
+</div>
+
+</body>
+</html>
